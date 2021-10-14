@@ -1,15 +1,15 @@
-import React from 'react'
-import { Root, Routes, addPrefetchExcludes } from 'react-static'
-import { createGlobalStyle } from 'styled-components'
-import { Grommet } from 'grommet'
+import React from 'react';
+import { Root, Routes, addPrefetchExcludes } from 'react-static';
+import { createGlobalStyle } from 'styled-components';
+import { Grommet } from 'grommet';
 //
-import { Link, Router } from 'components/Router'
+import { Link, Router } from 'components/Router';
 
 const GlobalStyle = createGlobalStyle`
   * {
     scroll-behavior: smooth;
   }
-`
+`;
 
 const theme = {
   global: {
@@ -17,10 +17,10 @@ const theme = {
       family: 'sans-serif',
     },
   },
-}
+};
 
 // Any routes that start with 'dynamic' will be treated as non-static routes
-addPrefetchExcludes(['dynamic'])
+addPrefetchExcludes(['dynamic']);
 
 function App() {
   return (
@@ -39,7 +39,7 @@ function App() {
         </div>
       </Grommet>
     </Root>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,5 +1,5 @@
-import path from 'path'
-import axios from 'axios'
+import path from 'path';
+import axios from 'axios';
 
 export default {
   // getRoutes: async () => {
@@ -34,4 +34,4 @@ export default {
     require.resolve('react-static-plugin-reach-router'),
     require.resolve('react-static-plugin-sitemap'),
   ],
-}
+};

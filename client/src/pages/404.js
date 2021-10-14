@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-import { Link } from 'components/Router'
+import { Link } from 'components/Router';
 
 export default () => (
   <div>
@@ -9,4 +9,4 @@ export default () => (
       Go <Link to="/">home</Link>
     </p>
   </div>
-)
+);
