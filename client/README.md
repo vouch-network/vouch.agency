@@ -1,4 +1,4 @@
-# admin client
+# vouch.agency client
 
 built with [react-static](https://github.com/react-static/react-static).
 
@@ -25,7 +25,7 @@ $ yarn start
 run dev server with docker:
 
 ```bash
-$ docker run -it --rm --name vouch-agency-admin-client -v "$PWD":/usr/src/app -w /usr/src/app -p 3000:3000 node:16 yarn start
+$ docker run -it --rm --name vouch-agency-client -v "$PWD":/usr/src/app -w /usr/src/app -p 3000:3000 node:16 yarn start
 ```
 
 build site for production:
@@ -35,5 +35,5 @@ $ yarn build
 # or
 # npm run build
 # with docker:
-# docker run -it --rm --name vouch-agency-admin-client -v "$PWD":/usr/src/app -w /usr/src/app node:16 yarn build
+# docker run -it --rm --name vouch-agency-client -v "$PWD":/usr/src/app -w /usr/src/app node:16 yarn build
 ```

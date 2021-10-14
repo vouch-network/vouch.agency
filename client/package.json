@@ -11,13 +11,16 @@
   "dependencies": {
     "@reach/router": "^1.3.4",
     "axios": "^0.21.1",
+    "grommet": "^2.18.0",
     "react": "^16.14.0",
     "react-dom": "^16.14.0",
     "react-hot-loader": "^4.13.0",
     "react-static": "^7.5.1",
     "react-static-plugin-reach-router": "^7.5.1",
     "react-static-plugin-sitemap": "^7.5.1",
-    "react-static-plugin-source-filesystem": "^7.5.1"
+    "react-static-plugin-source-filesystem": "^7.5.1",
+    "react-static-plugin-styled-components": "^7.6.2",
+    "styled-components": "^5.3.1"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
@@ -30,5 +33,8 @@
     "eslint-plugin-react": "^7.22.0",
     "eslint-plugin-react-hooks": "^4.2.0",
     "serve": "^11.3.2"
+  },
+  "resolutions": {
+    "**/react-universal-component": "4.0.1"
   }
 }
