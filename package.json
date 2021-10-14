@@ -1,0 +1,16 @@
+{
+  "name": "vouch.agency",
+  "version": "0.0.0-dev",
+  "main": "index.js",
+  "repository": "git@github.com:SuaYoo/vouch.agency.git",
+  "author": "sua yoo <sua@suayoo.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "husky": "^7.0.0",
+    "prettier": "^2.4.1",
+    "pretty-quick": "^3.1.1"
+  },
+  "scripts": {
+    "prepare": "husky install"
+  }
+}
