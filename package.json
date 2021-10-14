@@ -12,5 +12,10 @@
   },
   "scripts": {
     "prepare": "husky install"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
   }
 }
