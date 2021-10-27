@@ -4,5 +4,5 @@ alpha, may break or be broken
 
 see docs for:
 
-- [Next.js app](./app) ([alpha.vouch.agency](https://alpha.vouch.agency))
-- [Gun relay peer](./server)
+- [Next.js app](./app#readme) ([alpha.vouch.agency](https://alpha.vouch.agency))
+- [Gun relay peer](./server#readme)
