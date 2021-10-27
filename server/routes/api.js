@@ -36,53 +36,6 @@ router.use(corsMiddleware);
 router.options('*', corsMiddleware);
 router.use(express.json());
 
-router.post('/certificates', async (req, res) => {
-  const { username, pub: userPubKey } = req.body;
-
-  // See https://gun.eco/docs/SEA.certify for policies
-  const policy = [
-    // allow users to add and edit their profiles with:
-    //   gun
-    //     .get('~'+gunApp.pub)
-    //     .get('profiles')
-    //     .get(user.pub)
-    //     .put({ name: 'alice' }, null, {opt: { cert: certificate }} )
-    { '*': GUN_PATH.profiles },
-    { '*': GUN_PATH.vouches },
-    // TODO chat
-  ];
-
-  // expire in 2 hours
-  const expiresAt = Date.now() + 60 * 60 * 1000 * 2;
-
-  const certificate = await SEA.certify(
-    [userPubKey],
-    policy,
-    APP_ACCESS_KEY_PAIR,
-    ({ err }) => {
-      if (process.env.NODE_ENV === 'development') {
-        if (err) {
-          console.log(`Error creating certificate for ${username}:`, err);
-        } else {
-          console.log(`Successfully created certificate for ${username}`);
-        }
-      }
-    },
-    // FIXME neither expiry or block seem to be working?
-    // https://github.com/amark/gun/issues/1143
-    {
-      expiry: expiresAt,
-      // name of path to blocked/banned users
-      block: 'blocked',
-    }
-  );
-
-  res.status(201).send({
-    certificate,
-    expires_at: expiresAt,
-  });
-});
-
 router.post('/tokens', (req, res) => {
   const { username, pub } = req.body;
 

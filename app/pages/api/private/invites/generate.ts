@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-import withSessionRequired, { getUser, NextIronRequest } from 'lib/session';
+import { getUser, NextIronRequest } from 'lib/session';
 
 const INVITE_SECRET = process.env.INVITE_SECRET;
 
@@ -43,4 +43,4 @@ const generateInviteHandler = async (
   }
 };
 
-export default withSessionRequired(generateInviteHandler);
+export default generateInviteHandler;

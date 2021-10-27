@@ -160,7 +160,7 @@ export default function useSignUp({
     try {
       const [certData, tokenData] = await Promise.all([
         axios
-          .post(`${NEXT_PUBLIC_GUN_SERVER_URL}/api/certificates`, {
+          .post(`/api/private/certificates`, {
             username: value.username,
             pub: userPubKeyRef.current,
           })
