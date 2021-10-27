@@ -14,8 +14,7 @@ export default function Privacy() {
         You are not being tracked.
       </Paragraph>
       <Paragraph size="large" margin={{ vertical: 'small' }}>
-        There is no data on you being stored anywhere, in this app or in any
-        third party service.
+        There is no data associated with you or stored in any server.
       </Paragraph>
       <Paragraph size="large" margin={{ vertical: 'small' }}>
         This means there is no data to feed neural networks. This means there is
@@ -23,16 +22,22 @@ export default function Privacy() {
         another.
       </Paragraph>
       <Paragraph size="large" margin={{ vertical: 'small' }}>
-        In these ways, you, in both flawed and enchanting ways, have final
-        Agency.
+        As you browse the site, only the segments of the site data that you
+        consume will be stored locally in your browser. This cache exists in
+        order to distribute the site between peers (i.e. other browsers.) Your
+        browsing behavior is not analyzed in this app or sent anywhere to be
+        analyzed.
+      </Paragraph>
+      <Paragraph size="large" margin={{ vertical: 'small' }}>
+        You, in both flawed and enchanting ways, have final Agency.
       </Paragraph>
       <Heading level={2} margin={{ bottom: 'none' }}>
         Vouch Network
       </Heading>
       <Paragraph size="large" margin={{ vertical: 'small' }}>
-        Your data is not being stored in a central database. Your data is
-        distributed and synced using peer-to-peer technology across all network
-        members.
+        Your account data is not being stored in a central database. Your data
+        is distributed and synced using peer-to-peer technology across all
+        network members.
       </Paragraph>
       <Paragraph size="large" margin={{ vertical: 'small' }}>
         This means that there is no one server or person who retains a full copy
