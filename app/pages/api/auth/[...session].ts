@@ -53,9 +53,9 @@ async function user(req: NextIronRequest, res: NextApiResponse) {
   }
 }
 
-function gunAuthHandler(req: NextIronRequest, res: NextApiResponse) {
+function sessionHandler(req: NextIronRequest, res: NextApiResponse) {
   let {
-    query: { gundb: route },
+    query: { session: route },
   } = req;
 
   route = Array.isArray(route) ? route[0] : route;
@@ -72,4 +72,4 @@ function gunAuthHandler(req: NextIronRequest, res: NextApiResponse) {
   }
 }
 
-export default withSession(gunAuthHandler);
+export default withSession(sessionHandler);
