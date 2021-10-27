@@ -36,16 +36,4 @@ router.use(corsMiddleware);
 router.options('*', corsMiddleware);
 router.use(express.json());
 
-router.post('/tokens', (req, res) => {
-  const { username, pub } = req.body;
-
-  const token = jwt.sign({ username, pub }, APP_ACCESS_TOKEN_SECRET, {
-    expiresIn: '2h',
-  });
-
-  res.status(201).send({
-    accessToken: token,
-  });
-});
-
 module.exports = router;

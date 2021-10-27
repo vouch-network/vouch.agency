@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { NextApiRequest, NextApiResponse } from 'next';
 import SEA from 'gun/sea';
 
@@ -6,11 +5,10 @@ import { getUser, NextIronRequest } from 'lib/session';
 import { GUN_PATH, GUN_KEY } from 'utils/constants';
 
 if (!process.env.APP_ACCESS_KEY_PAIR) {
-  throw new Error('APP_ACCESS_KEY_PAIR in env environments required');
+  throw new Error('APP_ACCESS_KEY_PAIR in env environment required');
 }
 
 const APP_ACCESS_KEY_PAIR = JSON.parse(process.env.APP_ACCESS_KEY_PAIR);
-const INVITE_SECRET = process.env.INVITE_SECRET;
 
 const certificatesHandler = async (
   req: NextIronRequest,

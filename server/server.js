@@ -9,7 +9,6 @@ require('bullet-catcher');
 require('dotenv').config();
 
 const port = process.env.PORT || 8765;
-const APP_ACCESS_KEY_PAIR = JSON.parse(process.env.APP_ACCESS_KEY_PAIR);
 const APP_ACCESS_TOKEN_SECRET = process.env.APP_ACCESS_TOKEN_SECRET;
 
 const app = express();
