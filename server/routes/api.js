@@ -5,8 +5,8 @@ const jwt = require('jsonwebtoken');
 const SEA = require('gun/sea');
 const { GUN_PATH } = require('../constants');
 
-const APP_KEY_PAIR = JSON.parse(process.env.APP_KEY_PAIR);
-const APP_TOKEN_SECRET = process.env.APP_TOKEN_SECRET;
+const APP_ACCESS_KEY_PAIR = JSON.parse(process.env.APP_ACCESS_KEY_PAIR);
+const APP_ACCESS_TOKEN_SECRET = process.env.APP_ACCESS_TOKEN_SECRET;
 
 const router = express.Router();
 
@@ -58,7 +58,7 @@ router.post('/certificates', async (req, res) => {
   const certificate = await SEA.certify(
     [userPubKey],
     policy,
-    APP_KEY_PAIR,
+    APP_ACCESS_KEY_PAIR,
     ({ err }) => {
       if (process.env.NODE_ENV === 'development') {
         if (err) {
@@ -86,7 +86,7 @@ router.post('/certificates', async (req, res) => {
 router.post('/tokens', (req, res) => {
   const { username, pub } = req.body;
 
-  const token = jwt.sign({ username, pub }, APP_TOKEN_SECRET, {
+  const token = jwt.sign({ username, pub }, APP_ACCESS_TOKEN_SECRET, {
     expiresIn: '2h',
   });
 
