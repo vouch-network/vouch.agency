@@ -45,9 +45,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           console.log(e);
         }
 
-        const profiles = usersToPublicProfiles(users, {
-          [user.username!]: userMedia,
-        });
+        // TODO
+        const profiles: any[] = [];
+
+        // const profiles = usersToPublicProfiles(users, {
+        //   [user.username!]: userMedia,
+        // });
 
         res.status(200).json(profiles[0]);
       } else {
