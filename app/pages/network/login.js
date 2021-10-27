@@ -77,6 +77,9 @@ export default function Login() {
   const [isLoggingIn, setIsLoggingIn] = useState();
   const [error, setError] = useState();
 
+  const redirectTo = '/network/me';
+  // const redirectTo = '/network/we'
+
   const handleSubmit = async ({ value }) => {
     setError();
     setIsLoggingIn(true);
@@ -89,18 +92,15 @@ export default function Login() {
       // start session on server
       await axios.post('/api/auth/login', user);
 
-      router.push('/network/me');
-      // router.push('/network/we');
+      router.push(redirectTo);
     } catch (err) {
       setError(err.message);
     }
   };
 
-  // useEffect(() => {
-  //   if (isAuthenticated) {
-  //     router.push('/network/we');
-  //   }
-  // }, [isAuthenticated]);
+  useEffect(() => {
+    router.prefetch(redirectTo);
+  }, []);
 
   return (
     <Box background="white" pad="large" gap="medium" width="26em">
