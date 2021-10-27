@@ -20,7 +20,9 @@ const generateInviteHandler = async (
     const passcode = crypto.randomInt(100000, 1000000).toString();
     const hmac = crypto.createHmac('sha256', INVITE_SECRET);
 
-    const expiresAt = Number(query.expiresAt);
+    // expire 24 hours from now if not specified
+    const expiresAt =
+      Number(query.expiresAt) || Date.now() + 60 * 60 * 1000 * 24;
 
     hmac.update(
       JSON.stringify({
