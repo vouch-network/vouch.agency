@@ -47,7 +47,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     <>
       <GlobalStyle />
       <Grommet full theme={theme}>
-        <GunProvider>
+        <GunProvider sessionUser={pageProps.user}>
           <UserProvider user={pageProps.user}>
             {getLayout(<Component {...pageProps} />)}
           </UserProvider>

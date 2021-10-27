@@ -5,6 +5,7 @@ import NetworkLayout from 'components/NetworkLayout';
 import LoadingScreen from 'components/LoadingScreen';
 import NetworkGraph from 'components/NetworkGraph';
 import useUser from 'components/useUser';
+import { withUserServerSideProps } from 'lib/session';
 
 export default function Network() {
   const { user } = useUser();
@@ -45,10 +46,4 @@ Network.getLayout = function getLayout(page) {
   return <NetworkLayout centerHorizontally>{page}</NetworkLayout>;
 };
 
-export async function getServerSideProps(context) {
-  const user = context.req.session?.get('user') || null;
-
-  return {
-    props: { user }, // will be passed to the page component as props
-  };
-}
+export const getServerSideProps = withUserServerSideProps();

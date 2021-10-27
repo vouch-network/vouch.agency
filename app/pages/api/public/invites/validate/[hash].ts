@@ -3,6 +3,8 @@ import { NextApiRequest, NextApiResponse } from 'next';
 
 const INVITE_SECRET = process.env.INVITE_SECRET;
 
+import withSlowDown from 'lib/withSlowDown';
+
 const validateInviteHandler = async (
   req: NextApiRequest,
   res: NextApiResponse
@@ -35,4 +37,4 @@ const validateInviteHandler = async (
   }
 };
 
-export default validateInviteHandler;
+export default withSlowDown(validateInviteHandler);

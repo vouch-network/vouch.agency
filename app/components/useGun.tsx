@@ -7,7 +7,7 @@
  *   getGun().get('ours').put('this')
  *   getUser().get('mine').put('that')
  */
-import axios from 'axios';
+import axios, { CancelTokenSource } from 'axios';
 import React, {
   createContext,
   useContext,
@@ -27,6 +27,7 @@ const NEXT_PUBLIC_GUN_SERVER_URL = process.env.NEXT_PUBLIC_GUN_SERVER_URL;
 
 interface Props {
   children: React.ReactNode;
+  sessionUser?: GunUser;
 }
 
 interface ContextValue {
@@ -60,7 +61,7 @@ const GunContext = createContext<ContextValue>({
   needsReauthentication: undefined,
 });
 
-export const GunProvider = ({ children }: Props) => {
+export const GunProvider = ({ children, sessionUser }: Props) => {
   const gunRef = useRef<IGunChainReference>();
   const userRef = useRef<IGunChainReference>();
   const certificateRef = useRef<string>();
@@ -69,6 +70,7 @@ export const GunProvider = ({ children }: Props) => {
     resolve: (value: any | PromiseLike<any>) => void;
     reject: (value: any | PromiseLike<any>) => void;
   }>();
+  const credsRequestCancelTokenRef = useRef<CancelTokenSource>();
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [needsReauthentication, setNeedsReauthentication] =
@@ -140,40 +142,6 @@ export const GunProvider = ({ children }: Props) => {
           pub: sea.pub,
         };
 
-        // get new certificate and token
-        try {
-          await Promise.all([
-            fetch(`${NEXT_PUBLIC_GUN_SERVER_URL}/api/tokens`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(user),
-            })
-              .then((resp) => resp.json())
-              .then(({ accessToken }) => {
-                // store token in app memory
-                accessTokenRef.current = accessToken;
-              }),
-            fetch(`${NEXT_PUBLIC_GUN_SERVER_URL}/api/certificates`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(user),
-            })
-              .then((resp) => resp.json())
-              .then(({ certificate }) => {
-                // store certificate in app memory
-                // TODO check if expiry isn't working or misconfigured
-                // TODO handle expired certificates
-                certificateRef.current = certificate;
-              }),
-          ]);
-        } catch (err) {
-          console.error(err);
-        }
-
         if (!err) {
           setIsAuthenticated(true);
         }
@@ -182,6 +150,48 @@ export const GunProvider = ({ children }: Props) => {
 
     initGun();
   }, []);
+
+  useEffect(() => {
+    const getCreds = async () => {
+      credsRequestCancelTokenRef.current = axios.CancelToken.source();
+
+      // get new certificate and token
+      try {
+        await Promise.all([
+          axios
+            .post(`/api/private/tokens`, sessionUser, {
+              cancelToken: credsRequestCancelTokenRef.current.token,
+            })
+            .then(({ data }) => {
+              // store token in app memory
+              accessTokenRef.current = data.accessToken;
+            }),
+          axios
+            .post(`/api/private/certificates`, sessionUser, {
+              cancelToken: credsRequestCancelTokenRef.current.token,
+            })
+            .then(({ data }) => {
+              // store certificate in app memory
+              // TODO check if expiry isn't working or misconfigured
+              // TODO handle expired certificates
+              certificateRef.current = data.certificate;
+            }),
+        ]);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    if (sessionUser) {
+      getCreds();
+    }
+
+    return () => {
+      if (credsRequestCancelTokenRef.current?.cancel) {
+        credsRequestCancelTokenRef.current.cancel();
+      }
+    };
+  }, [sessionUser]);
 
   const login = async (value: {
     username: string;

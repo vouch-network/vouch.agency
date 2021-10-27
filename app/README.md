@@ -1,18 +1,42 @@
-# VOUCH client
+# VOUCH AGENCY client
+
+[vouch.agency](https://alpha.vouch.agency)
 
 ## Getting Started
 
-save env variables to .env file:
+### Installation
+
+Create a local env configuration file using the example template:
 
 ```bash
-$ cp .env.example .env
-# add just the public key from your server env here
-# see server README for instructions
+$ cp .env.local.example .env.local
 ```
 
-see example file--might be in flux while in alpha
+Generate [Gun](https://gun.eco/docs/API) app access keys:
 
-run the development server:
+```bash
+$ yarn generate-app-key
+```
+
+You should see something like:
+
+```bash
+> This is your secret app key pair.
+> Add this to your .dotenv file:
+> APP_ACCESS_KEY_PAIR='{"pub":"somelongstring","priv":"somelongstring","epub":"somelongstring","epriv":"somelongstring"}'
+```
+
+Copy `APP_ACCESS_KEY_PAIR` and add it to your new `.env.local` file. Fill out the rest of the env variables according to the comments in the file (env variables might be in flux while in alpha)
+
+Install dependencies:
+
+```bash
+yarn
+```
+
+### Development
+
+Run the development server:
 
 ```bash
 yarn dev
@@ -20,11 +44,41 @@ yarn dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+You can start editing the page by modifying files under `/pages`. The page auto-updates as you edit the file.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+The `/pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+## API routes
+
+WIP
+
+### POST `/api/auth/login`
+
+Starts a new user session
+
+### POST `/api/auth/logout`
+
+Ends user session
+
+### GET `/api/auth/user`
+
+Gets current user from session
+
+### POST `/api/private/certificates`
+
+Creates new certificate to use with `gun.put` to non-user spaces
+
+### GET `/api/private/tokens`
+
+Creates new token to use with gun relay server (see [Gun relay server](../server))
+
+### GET `/api/private/invites/generate`
+
+Generates new invite from current user session
+
+### GET `/api/public/invites/validate/[hash]`
+
+Validates invite
 
 ## gunDB
 

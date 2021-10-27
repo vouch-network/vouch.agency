@@ -25,6 +25,8 @@ interface ContextValue {
   saveUserSettings: (value: Partial<PrivateProfile>) => void;
   saveUserProfile: (value: Partial<PublicProfile>) => void;
   toggleProfileVisibility: (value: boolean) => void;
+  isSettingsReady: boolean | undefined;
+  isProfileReady: boolean | undefined;
 }
 
 // TODO memo
@@ -37,6 +39,8 @@ const UserContext = createContext<ContextValue>({
   saveUserSettings: () => {},
   saveUserProfile: () => {},
   toggleProfileVisibility: () => {},
+  isSettingsReady: false,
+  isProfileReady: false,
 });
 
 export const UserProvider = ({ children, user }: Props) => {
@@ -53,20 +57,28 @@ export const UserProvider = ({ children, user }: Props) => {
   const [pubProfile, setPubProfile] = useState<PublicProfile | null>();
   const [vouches, setVouches] = useState<any>({});
   const [error, setError] = useState<Error | null>();
+  const [isSettingsReady, setIsSettingsReady] = useState<boolean>();
+  const [isProfileReady, setIsProfileReady] = useState<boolean>();
+
+  const isUserReady = isReady && user;
+
+  useEffect(() => {
+    setError(null);
+
+    if (isUserReady && !privProfile) {
+      setPrivProfile({
+        username: user.username,
+      });
+    }
+  }, [isUserReady, privProfile]);
 
   useEffect(() => {
     let userPath: IGunChainReference;
 
-    setError(null);
-
-    if (isReady && user) {
+    if (isUserReady && !isSettingsReady) {
       // getUser() may not work in cases where we have a session
       // but the browser is not logged in with gun auth yet
       userPath = getGun()!.get(`~${user.pub}`);
-
-      setPrivProfile({
-        username: user.username,
-      });
 
       // fill out private profile
       userPath.get(`${user.username}/${GUN_PATH.settings}`).on(
@@ -78,42 +90,8 @@ export const UserProvider = ({ children, user }: Props) => {
               contactEmail: data[GUN_KEY.contactEmail] || '',
             }));
           }
-        },
-        {
-          change: true,
-        }
-      );
 
-      // fill out public profile
-      userPath.get(`${user.username}/${GUN_PATH.profile}`).on(
-        (data) => {
-          if (data) {
-            // @ts-ignore
-            setPubProfile((p) => ({
-              ...p,
-              displayName: data[GUN_KEY.displayName] || '',
-              pronouns: data[GUN_KEY.pronouns] || '',
-              location: data[GUN_KEY.location] || '',
-              bio: data[GUN_KEY.bio] || '',
-              isListed: data[GUN_KEY.isListed] || '',
-            }));
-          }
-        },
-        {
-          change: true,
-        }
-      );
-
-      // get media
-      userPath.get(GUN_KEY.profilePhoto).on(
-        (data) => {
-          if (data) {
-            // @ts-ignore
-            setPubProfile((p) => ({
-              ...p,
-              profilePhoto: data,
-            }));
-          }
+          if (!isSettingsReady) setIsSettingsReady(true);
         },
         {
           change: true,
@@ -145,7 +123,87 @@ export const UserProvider = ({ children, user }: Props) => {
     return () => {
       if (userPath?.off) userPath.off();
     };
-  }, [isReady, user]);
+  }, [isUserReady, isSettingsReady]);
+
+  useEffect(() => {
+    let userPath: IGunChainReference;
+
+    if (isUserReady && !isProfileReady) {
+      // getUser() may not work in cases where we have a session
+      // but the browser is not logged in with gun auth yet
+      userPath = getGun()!.get(`~${user.pub}`);
+
+      // fill out public profile
+      userPath
+        .get(`${user.username}/${GUN_PATH.profile}`)
+        .on(
+          (data) => {
+            if (data) {
+              // @ts-ignore
+              setPubProfile((p) => ({
+                ...p,
+                displayName: data[GUN_KEY.displayName] || '',
+                pronouns: data[GUN_KEY.pronouns] || '',
+                location: data[GUN_KEY.location] || '',
+                bio: data[GUN_KEY.bio] || '',
+                isListed: data[GUN_KEY.isListed] || '',
+              }));
+            }
+
+            if (data?.[GUN_KEY.profilePhoto]) {
+              // profile will be set as ready in next chain
+            } else {
+              if (!isProfileReady) setIsProfileReady(true);
+            }
+          },
+          {
+            change: true,
+          }
+        )
+        .get(GUN_KEY.profilePhoto)
+        .on(
+          (data) => {
+            if (data) {
+              // @ts-ignore
+              setPubProfile((p) => ({
+                ...p,
+                profilePhoto: data,
+              }));
+            }
+
+            if (!isProfileReady) setIsProfileReady(true);
+          },
+          {
+            change: true,
+          }
+        );
+
+      // get vouches
+      userPath
+        .get(GUN_PATH.vouches)
+        .map()
+        .get(user.username)
+        .on(
+          (data) => {
+            setVouches((p: any) => ({
+              ...p,
+              [data[GUN_KEY.timestamp]]: {
+                byUsername: data[GUN_KEY.byUsername],
+                vouchType: data[GUN_KEY.vouchType],
+              },
+            }));
+          },
+          {
+            change: true,
+          }
+        );
+    }
+
+    // TODO .off
+    return () => {
+      if (userPath?.off) userPath.off();
+    };
+  }, [isUserReady, Boolean(vouches)]);
 
   // we may need to reauthenticate if session was loaded from the server
   // TODO reauthenticate if token or cert expired
@@ -209,7 +267,7 @@ export const UserProvider = ({ children, user }: Props) => {
     <UserContext.Provider
       value={{
         error,
-        user: user,
+        user,
         // @ts-ignore
         userSettings: privProfile,
         // @ts-ignore
@@ -218,6 +276,8 @@ export const UserProvider = ({ children, user }: Props) => {
         saveUserSettings,
         saveUserProfile,
         toggleProfileVisibility,
+        isSettingsReady,
+        isProfileReady,
       }}
     >
       {children}

@@ -6,10 +6,6 @@ import niceware from 'niceware';
 import useGun from 'components/useGun';
 import { GUN_PATH, GUN_KEY, GUN_VALUE } from 'utils/constants';
 
-const NEXT_PUBLIC_GUN_APP_PUBLIC_KEY =
-  process.env.NEXT_PUBLIC_GUN_APP_PUBLIC_KEY;
-const NEXT_PUBLIC_GUN_SERVER_URL = process.env.NEXT_PUBLIC_GUN_SERVER_URL;
-
 // states:
 //  [empty] -> usernameAvailable
 //  [empty] -> usernameTaken
@@ -160,13 +156,13 @@ export default function useSignUp({
     try {
       const [certData, tokenData] = await Promise.all([
         axios
-          .post(`${NEXT_PUBLIC_GUN_SERVER_URL}/api/certificates`, {
+          .post(`/api/private/certificates`, {
             username: value.username,
             pub: userPubKeyRef.current,
           })
           .then(({ data }) => data),
         axios
-          .post(`${NEXT_PUBLIC_GUN_SERVER_URL}/api/tokens`, {
+          .post(`/api/private/tokens`, {
             username: value.username,
             pub: userPubKeyRef.current,
           })

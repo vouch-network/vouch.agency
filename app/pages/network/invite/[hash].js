@@ -304,7 +304,7 @@ export default function Join() {
       setJoinState(STATE.isValidating);
 
       const { data } = await axios.post(
-        `/api/private/invites/validate/${router.query.hash}`,
+        `/api/public/invites/validate/${router.query.hash}`,
         {
           username: value.inviterUsername.replace('@vouch.agency', ''),
           passcode: value.passcode.replace(/\-/g, ''),

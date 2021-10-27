@@ -1,30 +1,24 @@
-# VOUCH gun relay & auth server
+# VOUCH AGENCY Gun Relay Server
+
+[Gun](https://gun.eco/docs/API) relay server for persisting data between [vouch.agency](https://alpha.vouch.agency) peers.
 
 ## Dev
 
-generate an app key pair:
-
-```bash
-$ cd server
-$ yarn generate-app-key
-# output should be kept secret
-```
-
-save env variable to .env file:
+create .env file:
 
 ```bash
 $ cp .env.example .env
-# save the output from last step in your new file
+# see comments in file
 ```
 
-start the server:
+install and start the server:
 
 ```bash
 $ yarn
 $ yarn start
 ```
 
-the server runs on port 8765. to start with file watching and server reload enabled:
+the server runs on port 8765. to start with file watching, debugging and server reload enabled:
 
 ```bash
 $ yarn watch

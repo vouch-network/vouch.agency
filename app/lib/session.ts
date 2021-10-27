@@ -13,6 +13,19 @@ export function getUser(req: NextIronRequest) {
   return req.session?.get('user');
 }
 
+export function withUserServerSideProps(initialProps: any) {
+  return async function getServerSideProps(context: any) {
+    const user = getUser(context.req) || null;
+
+    return {
+      props: {
+        ...initialProps,
+        user,
+      },
+    };
+  };
+}
+
 export function withSession(
   handler: NextApiHandler | NextIronApiHandler
 ): NextIronApiHandler {

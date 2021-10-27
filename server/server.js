@@ -9,13 +9,10 @@ require('bullet-catcher');
 require('dotenv').config();
 
 const port = process.env.PORT || 8765;
-const APP_ACCESS_KEY_PAIR = JSON.parse(process.env.APP_ACCESS_KEY_PAIR);
 const APP_ACCESS_TOKEN_SECRET = process.env.APP_ACCESS_TOKEN_SECRET;
 
 const app = express();
-const api = require('./routes/api');
 
-app.use('/api', api);
 app.use(Gun.serve);
 
 const server = app.listen(port, () => {
@@ -49,13 +46,6 @@ const gun = Gun({
   isValid: verifyToken,
 });
 
+// I copied below from some example, not sure what it was doing...
 // // Sync everything
 // gun.on('out', { get: { '#': { '*': '' } } });
-
-// // Authorize this app as a user
-// gun.user().auth(APP_ACCESS_KEY_PAIR, ({ err }) => {
-//   // TODO handle app auth error
-//   if (err) {
-//     console.error('server auth err:', err);
-//   }
-// });
