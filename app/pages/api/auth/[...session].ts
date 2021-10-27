@@ -1,7 +1,7 @@
 import type { Session } from 'next-iron-session';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import withSession, { NextIronRequest } from 'lib/session';
+import { withSession, NextIronRequest, getUser } from 'lib/session';
 
 async function login(req: NextIronRequest, res: NextApiResponse) {
   const { body, method } = req;
@@ -39,7 +39,7 @@ async function user(req: NextIronRequest, res: NextApiResponse) {
   const { query, method } = req;
 
   if (method === 'GET') {
-    const user = req.session.get('user');
+    const user = getUser(req);
 
     res.status(200).send({
       user: {

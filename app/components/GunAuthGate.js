@@ -13,7 +13,7 @@
 import { useEffect } from 'react';
 
 import useGun from 'components/useGun';
-import withSession from 'lib/session';
+import { withSession, getUser } from 'lib/session';
 
 // block rendering until authenticated
 export default function GunAuthGate({ children }) {
@@ -28,7 +28,7 @@ export default function GunAuthGate({ children }) {
 
 export function withGunAuthGate() {
   return withSession(async function (context) {
-    const user = context.req.session?.get('user');
+    const user = getUser(context.req);
 
     if (!user) {
       return {
