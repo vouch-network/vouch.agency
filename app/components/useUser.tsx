@@ -25,6 +25,8 @@ interface ContextValue {
   saveUserSettings: (value: Partial<PrivateProfile>) => void;
   saveUserProfile: (value: Partial<PublicProfile>) => void;
   toggleProfileVisibility: (value: boolean) => void;
+  isSettingsReady: boolean | undefined;
+  isProfileReady: boolean | undefined;
 }
 
 // TODO memo
@@ -37,6 +39,8 @@ const UserContext = createContext<ContextValue>({
   saveUserSettings: () => {},
   saveUserProfile: () => {},
   toggleProfileVisibility: () => {},
+  isSettingsReady: false,
+  isProfileReady: false,
 });
 
 export const UserProvider = ({ children, user }: Props) => {
@@ -53,13 +57,15 @@ export const UserProvider = ({ children, user }: Props) => {
   const [pubProfile, setPubProfile] = useState<PublicProfile | null>();
   const [vouches, setVouches] = useState<any>({});
   const [error, setError] = useState<Error | null>();
+  const [isSettingsReady, setIsSettingsReady] = useState<boolean>();
+  const [isProfileReady, setIsProfileReady] = useState<boolean>();
 
   useEffect(() => {
     let userPath: IGunChainReference;
 
     setError(null);
 
-    if (isReady && user) {
+    if (isReady && user && !(isSettingsReady && isProfileReady)) {
       // getUser() may not work in cases where we have a session
       // but the browser is not logged in with gun auth yet
       userPath = getGun()!.get(`~${user.pub}`);
@@ -78,6 +84,8 @@ export const UserProvider = ({ children, user }: Props) => {
               contactEmail: data[GUN_KEY.contactEmail] || '',
             }));
           }
+
+          setIsSettingsReady(true);
         },
         {
           change: true,
@@ -98,6 +106,8 @@ export const UserProvider = ({ children, user }: Props) => {
               isListed: data[GUN_KEY.isListed] || '',
             }));
           }
+
+          setIsProfileReady(true);
         },
         {
           change: true,
@@ -145,7 +155,7 @@ export const UserProvider = ({ children, user }: Props) => {
     return () => {
       if (userPath?.off) userPath.off();
     };
-  }, [isReady, user]);
+  }, [isReady && user, isSettingsReady && isProfileReady]);
 
   // we may need to reauthenticate if session was loaded from the server
   // TODO reauthenticate if token or cert expired
@@ -209,7 +219,7 @@ export const UserProvider = ({ children, user }: Props) => {
     <UserContext.Provider
       value={{
         error,
-        user: user,
+        user,
         // @ts-ignore
         userSettings: privProfile,
         // @ts-ignore
@@ -218,6 +228,8 @@ export const UserProvider = ({ children, user }: Props) => {
         saveUserSettings,
         saveUserProfile,
         toggleProfileVisibility,
+        isSettingsReady,
+        isProfileReady,
       }}
     >
       {children}

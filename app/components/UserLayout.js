@@ -27,20 +27,24 @@ const Tab = styled(Box)`
 export default function UserLayout({ children }) {
   const router = useRouter();
   const {
+    user,
     userProfile,
     userSettings,
     saveUserSettings,
     saveUserProfile,
     toggleProfileVisibility,
+    isSettingsReady,
+    isProfileReady,
   } = useUser();
 
-  if (!userSettings) {
-    console.log('no user settings, assuming loading');
-
+  if (!isProfileReady || !isSettingsReady) {
     return null;
   }
 
-  if (!userProfile || !userProfile.displayName || !userSettings.contactEmail) {
+  if (
+    (isProfileReady && !userProfile?.displayName) ||
+    (isSettingsReady && !userSettings?.contactEmail)
+  ) {
     return (
       <Box margin={{ top: 'xlarge' }}>
         <PostSignUpScreen
