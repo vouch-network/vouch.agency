@@ -143,7 +143,7 @@ export const GunProvider = ({ children }: Props) => {
         // get new certificate and token
         try {
           await Promise.all([
-            fetch(`${NEXT_PUBLIC_GUN_SERVER_URL}/api/tokens`, {
+            fetch(`/api/private/tokens`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -155,7 +155,7 @@ export const GunProvider = ({ children }: Props) => {
                 // store token in app memory
                 accessTokenRef.current = accessToken;
               }),
-            fetch(`${NEXT_PUBLIC_GUN_SERVER_URL}/api/certificates`, {
+            fetch(`/api/private/certificates`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

@@ -32,6 +32,8 @@ export default function withSessionRequired(
     async (req: NextIronRequest, res: NextApiResponse): Promise<void> => {
       const user = getUser(req);
 
+      console.log('user:', user);
+
       if (!user) {
         res.status(401).json({
           error: 'not_authenticated',

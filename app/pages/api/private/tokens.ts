@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 
-import { getUser, NextIronRequest } from 'lib/session';
+import withSessionRequired, { getUser, NextIronRequest } from 'lib/session';
 
 if (!process.env.APP_ACCESS_TOKEN_SECRET) {
   throw new Error('APP_ACCESS_TOKEN_SECRET in env environment required');
@@ -28,4 +28,4 @@ const tokensHandler = async (req: NextIronRequest, res: NextApiResponse) => {
   }
 };
 
-export default tokensHandler;
+export default withSessionRequired(tokensHandler);

@@ -12,9 +12,7 @@ const port = process.env.PORT || 8765;
 const APP_ACCESS_TOKEN_SECRET = process.env.APP_ACCESS_TOKEN_SECRET;
 
 const app = express();
-const api = require('./routes/api');
 
-app.use('/api', api);
 app.use(Gun.serve);
 
 const server = app.listen(port, () => {
@@ -48,6 +46,7 @@ const gun = Gun({
   isValid: verifyToken,
 });
 
+// I copied below from some example, not sure what it was doing...
 // // Sync everything
 // gun.on('out', { get: { '#': { '*': '' } } });
 

@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import SEA from 'gun/sea';
 
-import { getUser, NextIronRequest } from 'lib/session';
+import withSessionRequired, { getUser, NextIronRequest } from 'lib/session';
 import { GUN_PATH, GUN_KEY } from 'utils/constants';
 
 if (!process.env.APP_ACCESS_KEY_PAIR) {
@@ -67,4 +67,4 @@ const certificatesHandler = async (
   }
 };
 
-export default certificatesHandler;
+export default withSessionRequired(certificatesHandler);
