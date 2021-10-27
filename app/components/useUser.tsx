@@ -60,19 +60,25 @@ export const UserProvider = ({ children, user }: Props) => {
   const [isSettingsReady, setIsSettingsReady] = useState<boolean>();
   const [isProfileReady, setIsProfileReady] = useState<boolean>();
 
-  useEffect(() => {
-    let userPath: IGunChainReference;
+  const isUserReady = isReady && user;
 
+  useEffect(() => {
     setError(null);
 
-    if (isReady && user && !(isSettingsReady && isProfileReady)) {
-      // getUser() may not work in cases where we have a session
-      // but the browser is not logged in with gun auth yet
-      userPath = getGun()!.get(`~${user.pub}`);
-
+    if (isUserReady && !privProfile) {
       setPrivProfile({
         username: user.username,
       });
+    }
+  }, [isUserReady, privProfile]);
+
+  useEffect(() => {
+    let userPath: IGunChainReference;
+
+    if (isUserReady && !isSettingsReady) {
+      // getUser() may not work in cases where we have a session
+      // but the browser is not logged in with gun auth yet
+      userPath = getGun()!.get(`~${user.pub}`);
 
       // fill out private profile
       userPath.get(`${user.username}/${GUN_PATH.settings}`).on(
@@ -91,6 +97,41 @@ export const UserProvider = ({ children, user }: Props) => {
           change: true,
         }
       );
+
+      // get vouches
+      userPath
+        .get(GUN_PATH.vouches)
+        .map()
+        .get(user.username)
+        .on(
+          (data) => {
+            setVouches((p: any) => ({
+              ...p,
+              [data[GUN_KEY.timestamp]]: {
+                byUsername: data[GUN_KEY.byUsername],
+                vouchType: data[GUN_KEY.vouchType],
+              },
+            }));
+          },
+          {
+            change: true,
+          }
+        );
+    }
+
+    // TODO .off
+    return () => {
+      if (userPath?.off) userPath.off();
+    };
+  }, [isUserReady, isSettingsReady]);
+
+  useEffect(() => {
+    let userPath: IGunChainReference;
+
+    if (isUserReady && !isProfileReady) {
+      // getUser() may not work in cases where we have a session
+      // but the browser is not logged in with gun auth yet
+      userPath = getGun()!.get(`~${user.pub}`);
 
       // fill out public profile
       userPath.get(`${user.username}/${GUN_PATH.profile}`).on(
@@ -155,7 +196,7 @@ export const UserProvider = ({ children, user }: Props) => {
     return () => {
       if (userPath?.off) userPath.off();
     };
-  }, [isReady && user, isSettingsReady && isProfileReady]);
+  }, [isUserReady, Boolean(vouches)]);
 
   // we may need to reauthenticate if session was loaded from the server
   // TODO reauthenticate if token or cert expired
