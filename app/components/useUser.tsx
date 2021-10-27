@@ -154,7 +154,12 @@ export const UserProvider = ({ children, user }: Props) => {
     const gunUser = getUser()!.is;
 
     if (!gunUser) {
-      await triggerReauthentication();
+      try {
+        await triggerReauthentication(user!.username);
+      } catch (err) {
+        // TODO show error to user
+        console.error(err);
+      }
     }
   };
 
