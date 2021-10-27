@@ -3,7 +3,8 @@
   "scripts": {
     "dev": "next",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "generate-app-key": "node ./scripts/generateAppKey.js"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^1.6.1",

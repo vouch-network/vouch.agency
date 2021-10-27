@@ -5,8 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node server.js",
-    "watch": "NODE_ENV=development nodemon server.js",
-    "generate-app-key": "node generateAppKey.js"
+    "watch": "NODE_ENV=development nodemon server.js"
   },
   "dependencies": {
     "bullet-catcher": "https://github.com/SuaYoo/bullet-catcher.git",

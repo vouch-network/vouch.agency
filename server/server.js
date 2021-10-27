@@ -49,11 +49,3 @@ const gun = Gun({
 // I copied below from some example, not sure what it was doing...
 // // Sync everything
 // gun.on('out', { get: { '#': { '*': '' } } });
-
-// // Authorize this app as a user
-// gun.user().auth(APP_ACCESS_KEY_PAIR, ({ err }) => {
-//   // TODO handle app auth error
-//   if (err) {
-//     console.error('server auth err:', err);
-//   }
-// });
