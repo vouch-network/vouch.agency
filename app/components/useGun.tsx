@@ -38,10 +38,10 @@ interface ContextValue {
   setAccessToken: (token: string) => void;
   login: (value: any) => Promise<any>;
   logout: () => void;
-  triggerReauthentication: () => Promise<void>;
+  triggerReauthentication: (username: string) => Promise<void>;
   isReady: boolean;
   isAuthenticated: boolean;
-  needsReauthentication: boolean;
+  needsReauthentication: string | undefined;
 }
 
 // TODO memo
@@ -57,7 +57,7 @@ const GunContext = createContext<ContextValue>({
   triggerReauthentication: () => Promise.resolve(),
   isReady: false,
   isAuthenticated: false,
-  needsReauthentication: false,
+  needsReauthentication: undefined,
 });
 
 export const GunProvider = ({ children }: Props) => {
@@ -65,11 +65,15 @@ export const GunProvider = ({ children }: Props) => {
   const userRef = useRef<IGunChainReference>();
   const certificateRef = useRef<string>();
   const accessTokenRef = useRef<string>();
-  const reauthenticationCallbackRef = useRef<Function>();
+  const reauthenticationPromiseRef = useRef<{
+    resolve: (value: any | PromiseLike<any>) => void;
+    reject: (value: any | PromiseLike<any>) => void;
+  }>();
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [needsReauthentication, setNeedsReauthentication] =
-    useState<boolean>(false);
+    // string: username
+    useState<string>();
 
   useEffect(() => {
     const initGun = async () => {
@@ -219,16 +223,52 @@ export const GunProvider = ({ children }: Props) => {
     return axios.post('/api/auth/logout');
   };
 
-  const triggerReauthentication = (): Promise<void> => {
-    setNeedsReauthentication(true);
+  const triggerReauthentication = (username: string): Promise<void> => {
+    reauthenticationPromiseRef.current = undefined;
 
-    return new Promise((resolve) => {
-      resolve();
+    if (!username) {
+      return Promise.reject(new Error('Username required'));
+    }
+
+    setNeedsReauthentication(username);
+
+    return new Promise((resolve, reject) => {
+      reauthenticationPromiseRef.current = {
+        resolve: (arg) => {
+          setNeedsReauthentication(undefined);
+
+          reauthenticationPromiseRef.current = undefined;
+          resolve(arg);
+        },
+        reject: (arg) => {
+          reauthenticationPromiseRef.current = undefined;
+          reject(arg);
+        },
+      };
     });
   };
 
   const handleSubmitPassphrase = ({ passphrase }: any) => {
-    // console.log(passphrase);
+    if (needsReauthentication) {
+      userRef.current?.auth(
+        needsReauthentication,
+        passphrase,
+        ({ err, sea }: any) => {
+          if (err && reauthenticationPromiseRef.current?.reject) {
+            reauthenticationPromiseRef.current.reject(
+              new Error('Could not log inn')
+            );
+          } else {
+            if (reauthenticationPromiseRef.current?.resolve) {
+              reauthenticationPromiseRef.current.resolve({
+                username: needsReauthentication,
+                pub: sea.pub,
+              });
+            }
+          }
+        }
+      );
+    }
   };
 
   return (
@@ -256,8 +296,8 @@ export const GunProvider = ({ children }: Props) => {
 
       {needsReauthentication && (
         <Layer
-          onClickOutside={() => setNeedsReauthentication(false)}
-          onEsc={() => setNeedsReauthentication(false)}
+          onClickOutside={() => setNeedsReauthentication(undefined)}
+          onEsc={() => setNeedsReauthentication(undefined)}
         >
           <Box pad="medium" gap="small">
             <Text>Re-enter your passphrase to continue</Text>

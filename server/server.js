@@ -9,8 +9,8 @@ require('bullet-catcher');
 require('dotenv').config();
 
 const port = process.env.PORT || 8765;
-const APP_KEY_PAIR = JSON.parse(process.env.APP_KEY_PAIR);
-const APP_TOKEN_SECRET = process.env.APP_TOKEN_SECRET;
+const APP_ACCESS_KEY_PAIR = JSON.parse(process.env.APP_ACCESS_KEY_PAIR);
+const APP_ACCESS_TOKEN_SECRET = process.env.APP_ACCESS_TOKEN_SECRET;
 
 const app = express();
 const api = require('./routes/api');
@@ -26,7 +26,7 @@ const server = app.listen(port, () => {
 function verifyToken(msg) {
   if (msg?.headers?.accessToken) {
     try {
-      jwt.verify(msg.headers.accessToken, APP_TOKEN_SECRET);
+      jwt.verify(msg.headers.accessToken, APP_ACCESS_TOKEN_SECRET);
 
       return true;
     } catch (err) {
@@ -53,7 +53,7 @@ const gun = Gun({
 // gun.on('out', { get: { '#': { '*': '' } } });
 
 // // Authorize this app as a user
-// gun.user().auth(APP_KEY_PAIR, ({ err }) => {
+// gun.user().auth(APP_ACCESS_KEY_PAIR, ({ err }) => {
 //   // TODO handle app auth error
 //   if (err) {
 //     console.error('server auth err:', err);

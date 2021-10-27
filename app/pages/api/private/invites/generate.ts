@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-import withSession, { getUser, NextIronRequest } from 'lib/session';
+import withSessionRequired, { getUser, NextIronRequest } from 'lib/session';
 
 const INVITE_SECRET = process.env.INVITE_SECRET;
 
@@ -12,10 +12,6 @@ const generateInviteHandler = async (
   const { query, method } = req;
 
   const user = getUser(req);
-
-  if (!user) {
-    res.status(401).send({ message: 'Unauthorized' });
-  }
 
   if (method === 'GET') {
     if (!INVITE_SECRET) {
@@ -47,4 +43,4 @@ const generateInviteHandler = async (
   }
 };
 
-export default withSession(generateInviteHandler);
+export default withSessionRequired(generateInviteHandler);

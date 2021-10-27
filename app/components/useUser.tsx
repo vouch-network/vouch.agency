@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, createContext, useContext } from 'react';
+import type { IGunChainReference } from 'gun/types/chain';
 
 import useGun from 'components/useGun';
 import type { GunUser, PrivateProfile, PublicProfile } from 'utils/profiles';
@@ -41,6 +42,7 @@ const UserContext = createContext<ContextValue>({
 export const UserProvider = ({ children, user }: Props) => {
   const gunEventRef = useRef<{ [key: string]: any }>({});
   const {
+    isReady,
     getGun,
     getUser,
     getCertificate,
@@ -53,75 +55,74 @@ export const UserProvider = ({ children, user }: Props) => {
   const [error, setError] = useState<Error | null>();
 
   useEffect(() => {
+    let userPath: IGunChainReference;
+
     setError(null);
 
-    if (isAuthenticated && user) {
+    if (isReady && user) {
+      // getUser() may not work in cases where we have a session
+      // but the browser is not logged in with gun auth yet
+      userPath = getGun()!.get(`~${user.pub}`);
+
       setPrivProfile({
         username: user.username,
       });
 
       // fill out private profile
-      getUser()
-        ?.get(`${user.username}/${GUN_PATH.settings}`)
-        .on(
-          (data) => {
-            if (data) {
-              // @ts-ignore
-              setPrivProfile((p) => ({
-                ...p,
-                contactEmail: data[GUN_KEY.contactEmail] || '',
-              }));
-            }
-          },
-          {
-            change: true,
+      userPath.get(`${user.username}/${GUN_PATH.settings}`).on(
+        (data) => {
+          if (data) {
+            // @ts-ignore
+            setPrivProfile((p) => ({
+              ...p,
+              contactEmail: data[GUN_KEY.contactEmail] || '',
+            }));
           }
-        );
+        },
+        {
+          change: true,
+        }
+      );
 
       // fill out public profile
-      getUser()
-        ?.get(`${user.username}/${GUN_PATH.profile}`)
-        .on(
-          (data) => {
-            if (data) {
-              // @ts-ignore
-              setPubProfile((p) => ({
-                ...p,
-                displayName: data[GUN_KEY.displayName] || '',
-                pronouns: data[GUN_KEY.pronouns] || '',
-                location: data[GUN_KEY.location] || '',
-                bio: data[GUN_KEY.bio] || '',
-                isListed: data[GUN_KEY.isListed] || '',
-              }));
-            }
-          },
-          {
-            change: true,
+      userPath.get(`${user.username}/${GUN_PATH.profile}`).on(
+        (data) => {
+          if (data) {
+            // @ts-ignore
+            setPubProfile((p) => ({
+              ...p,
+              displayName: data[GUN_KEY.displayName] || '',
+              pronouns: data[GUN_KEY.pronouns] || '',
+              location: data[GUN_KEY.location] || '',
+              bio: data[GUN_KEY.bio] || '',
+              isListed: data[GUN_KEY.isListed] || '',
+            }));
           }
-        );
+        },
+        {
+          change: true,
+        }
+      );
 
       // get media
-      getUser()
-        ?.get(`${user.username}/${GUN_PATH.profile}`)
-        .get(GUN_KEY.profilePhoto)
-        .on(
-          (data) => {
-            if (data) {
-              // @ts-ignore
-              setPubProfile((p) => ({
-                ...p,
-                profilePhoto: data,
-              }));
-            }
-          },
-          {
-            change: true,
+      userPath.get(GUN_KEY.profilePhoto).on(
+        (data) => {
+          if (data) {
+            // @ts-ignore
+            setPubProfile((p) => ({
+              ...p,
+              profilePhoto: data,
+            }));
           }
-        );
+        },
+        {
+          change: true,
+        }
+      );
 
       // get vouches
-      getUser()
-        ?.get(GUN_PATH.vouches)
+      userPath
+        .get(GUN_PATH.vouches)
         .map()
         .get(user.username)
         .on(
@@ -141,7 +142,10 @@ export const UserProvider = ({ children, user }: Props) => {
     }
 
     // TODO .off
-  }, [isAuthenticated, user]);
+    return () => {
+      if (userPath?.off) userPath.off();
+    };
+  }, [isReady, user]);
 
   // we may need to reauthenticate if session was loaded from the server
   // TODO reauthenticate if token or cert expired
@@ -150,7 +154,12 @@ export const UserProvider = ({ children, user }: Props) => {
     const gunUser = getUser()!.is;
 
     if (!gunUser) {
-      await triggerReauthentication();
+      try {
+        await triggerReauthentication(user!.username);
+      } catch (err) {
+        // TODO show error to user
+        console.error(err);
+      }
     }
   };
 
