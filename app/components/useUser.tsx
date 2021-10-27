@@ -91,7 +91,7 @@ export const UserProvider = ({ children, user }: Props) => {
             }));
           }
 
-          setIsSettingsReady(true);
+          if (!isSettingsReady) setIsSettingsReady(true);
         },
         {
           change: true,
@@ -134,42 +134,49 @@ export const UserProvider = ({ children, user }: Props) => {
       userPath = getGun()!.get(`~${user.pub}`);
 
       // fill out public profile
-      userPath.get(`${user.username}/${GUN_PATH.profile}`).on(
-        (data) => {
-          if (data) {
-            // @ts-ignore
-            setPubProfile((p) => ({
-              ...p,
-              displayName: data[GUN_KEY.displayName] || '',
-              pronouns: data[GUN_KEY.pronouns] || '',
-              location: data[GUN_KEY.location] || '',
-              bio: data[GUN_KEY.bio] || '',
-              isListed: data[GUN_KEY.isListed] || '',
-            }));
-          }
+      userPath
+        .get(`${user.username}/${GUN_PATH.profile}`)
+        .on(
+          (data) => {
+            if (data) {
+              // @ts-ignore
+              setPubProfile((p) => ({
+                ...p,
+                displayName: data[GUN_KEY.displayName] || '',
+                pronouns: data[GUN_KEY.pronouns] || '',
+                location: data[GUN_KEY.location] || '',
+                bio: data[GUN_KEY.bio] || '',
+                isListed: data[GUN_KEY.isListed] || '',
+              }));
+            }
 
-          setIsProfileReady(true);
-        },
-        {
-          change: true,
-        }
-      );
-
-      // get media
-      userPath.get(GUN_KEY.profilePhoto).on(
-        (data) => {
-          if (data) {
-            // @ts-ignore
-            setPubProfile((p) => ({
-              ...p,
-              profilePhoto: data,
-            }));
+            if (data?.[GUN_KEY.profilePhoto]) {
+              // profile will be set as ready in next chain
+            } else {
+              if (!isProfileReady) setIsProfileReady(true);
+            }
+          },
+          {
+            change: true,
           }
-        },
-        {
-          change: true,
-        }
-      );
+        )
+        .get(GUN_KEY.profilePhoto)
+        .on(
+          (data) => {
+            if (data) {
+              // @ts-ignore
+              setPubProfile((p) => ({
+                ...p,
+                profilePhoto: data,
+              }));
+            }
+
+            if (!isProfileReady) setIsProfileReady(true);
+          },
+          {
+            change: true,
+          }
+        );
 
       // get vouches
       userPath

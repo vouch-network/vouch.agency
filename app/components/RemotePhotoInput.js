@@ -13,13 +13,14 @@ import {
 
 import Square from 'components/Square';
 
-export default function RemotePhotoInput({ media, onSubmit }) {
+export default function RemotePhotoInput({ media, saveUserProfile }) {
   const mediaUrl = media?.url;
 
   const [showForm, setShowForm] = useState();
   const [value, setValue] = useState({
     url: '',
   });
+  const [sucessMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (!mediaUrl && showForm === undefined) {
@@ -27,8 +28,31 @@ export default function RemotePhotoInput({ media, onSubmit }) {
     }
   }, [mediaUrl]);
 
+  const handleSubmit = async ({ value }) => {
+    setSuccessMessage();
+
+    console.log(value);
+
+    try {
+      await saveUserProfile({
+        profilePhoto: value,
+      });
+
+      setSuccessMessage('Saved photo');
+    } catch (err) {
+      console.error(err);
+      // TODO handle error
+    }
+  };
+
   return (
     <Box gap="xsmall" fill>
+      {sucessMessage && (
+        <Box>
+          <Text color="status-ok">{sucessMessage}</Text>
+        </Box>
+      )}
+
       <Square background="light-2">
         {mediaUrl && <Image src={mediaUrl} fit="contain" />}
       </Square>
@@ -48,11 +72,7 @@ export default function RemotePhotoInput({ media, onSubmit }) {
       )}
 
       {showForm && (
-        <Form
-          value={value}
-          onChange={(nextValue) => setValue(nextValue)}
-          onSubmit={onSubmit}
-        >
+        <Form value={value} onChange={setValue} onSubmit={handleSubmit}>
           <Box direction="row" gap="xsmall">
             <MaskedInput
               id="url-input"

@@ -15,6 +15,12 @@ function AccountInfoForm({ onSubmit, userSettings }) {
   });
   const [sucessMessage, setSuccessMessage] = useState('');
 
+  const handleChange = (nextValue) => {
+    if (sucessMessage) setSuccessMessage('');
+
+    setValue(nextValue);
+  };
+
   const handleSubmit = async () => {
     try {
       await onSubmit(value);
@@ -26,11 +32,7 @@ function AccountInfoForm({ onSubmit, userSettings }) {
   };
 
   return (
-    <Form
-      value={value}
-      onChange={(nextValue) => setValue(nextValue)}
-      onSubmit={handleSubmit}
-    >
+    <Form value={value} onChange={handleChange} onSubmit={handleSubmit}>
       <Box gap="medium">
         {sucessMessage && (
           <Box>

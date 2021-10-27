@@ -18,21 +18,43 @@ import UserLayout from 'components/UserLayout';
 // import ProfilePhotoUpload from 'components/me/ProfilePhotoUpload';
 import RemotePhotoInput from 'components/RemotePhotoInput';
 
-function PublicProfileForm({ userProfile, onSubmit }) {
+function PublicProfileForm({ userProfile, saveUserProfile }) {
   const [value, setValue] = useState({
     displayName: userProfile.displayName || '',
     location: userProfile.location || '',
     pronouns: userProfile.pronouns || '',
     bio: userProfile.bio || '',
   });
+  const [sucessMessage, setSuccessMessage] = useState('');
+
+  const handleChange = (nextValue) => {
+    if (sucessMessage) setSuccessMessage('');
+
+    setValue(nextValue);
+  };
+
+  const handleSubmit = async ({ value }) => {
+    setSuccessMessage();
+
+    try {
+      await saveUserProfile(value);
+
+      setSuccessMessage('Saved profile');
+    } catch (err) {
+      console.error(err);
+      // TODO handle error
+    }
+  };
 
   return (
-    <Form
-      value={value}
-      onChange={(nextValue) => setValue(nextValue)}
-      onSubmit={onSubmit}
-    >
+    <Form value={value} onChange={handleChange} onSubmit={handleSubmit}>
       <Box gap="medium">
+        {sucessMessage && (
+          <Box>
+            <Text color="status-ok">{sucessMessage}</Text>
+          </Box>
+        )}
+
         <Box width="medium" gap="xsmall">
           <FormField
             name="displayName"
@@ -90,51 +112,16 @@ function PublicProfileForm({ userProfile, onSubmit }) {
 
 export default function Me() {
   const { userProfile, saveUserProfile } = useUser();
-  const [sucessMessage, setSuccessMessage] = useState('');
-
-  const handleSubmitProfile = async ({ value }) => {
-    setSuccessMessage();
-
-    try {
-      await saveUserProfile(value);
-
-      setSuccessMessage('Saved profile');
-    } catch (err) {
-      console.error(err);
-      // TODO handle error
-    }
-  };
-
-  const handleSubmitPhoto = async ({ value }) => {
-    setSuccessMessage();
-
-    try {
-      await saveUserProfile({
-        profilePhoto: value,
-      });
-
-      setSuccessMessage('Saved profile');
-    } catch (err) {
-      console.error(err);
-      // TODO handle error
-    }
-  };
 
   return (
     <Box gap="medium">
-      {sucessMessage && (
-        <Box>
-          <Text color="status-ok">{sucessMessage}</Text>
-        </Box>
-      )}
-
       <Box direction="row" gap="medium" justify="between" wrap>
         <Box pad={{ horizontal: 'medium' }} gap="small">
           <Text>Your profile picture</Text>
           <Box width="20rem" align="center">
             <RemotePhotoInput
               media={userProfile.profilePhoto}
-              onSubmit={handleSubmitPhoto}
+              saveUserProfile={saveUserProfile}
             />
           </Box>
         </Box>
@@ -142,7 +129,7 @@ export default function Me() {
         <Box pad={{ horizontal: 'medium' }}>
           <PublicProfileForm
             userProfile={userProfile}
-            onSubmit={handleSubmitProfile}
+            saveUserProfile={saveUserProfile}
           />
         </Box>
       </Box>
