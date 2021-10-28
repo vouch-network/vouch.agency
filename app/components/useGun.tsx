@@ -23,7 +23,11 @@ import Gun from 'gun/gun';
 import EnterPasswordForm from 'components/EnterPasswordForm';
 import type { GunUser } from 'utils/profiles';
 
-const NEXT_PUBLIC_GUN_SERVER_URL = process.env.NEXT_PUBLIC_GUN_SERVER_URL;
+if (!process.env.NEXT_PUBLIC_GUN_PEERS) {
+  throw new Error('NEXT_PUBLIC_GUN_PEERS in env environment required');
+}
+
+const NEXT_PUBLIC_GUN_PEERS = process.env.NEXT_PUBLIC_GUN_PEERS.split(',');
 
 interface Props {
   children: React.ReactNode;
@@ -110,7 +114,7 @@ export const GunProvider = ({ children, sessionUser }: Props) => {
         });
 
         gunRef.current = Gun({
-          peers: [`${NEXT_PUBLIC_GUN_SERVER_URL}/gun`],
+          peers: NEXT_PUBLIC_GUN_PEERS,
           // use indexdb instead by including radisk dependencies
           localStorage: false,
           // importing rindexeddb exposes it to window
