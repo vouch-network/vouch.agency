@@ -7,6 +7,7 @@ async function login(req: NextIronRequest, res: NextApiResponse) {
   const { body, method } = req;
 
   if (method === 'POST') {
+    // TODO verify user pub
     const user = {
       username: body.username,
       pub: body.pub,

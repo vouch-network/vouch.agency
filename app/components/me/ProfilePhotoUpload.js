@@ -49,7 +49,7 @@ export default function ProfilePhotoUpload({ userProfile, saveUserProfile }) {
     try {
       console.log('ready:', file.type);
 
-      const { data } = await axios.post(`/api/private/media/upload`, file, {
+      const { data } = await axios.post(`/api/network/media/upload`, file, {
         headers: {
           'content-type': file.type,
           // TODO maybe a better way to pass file name?

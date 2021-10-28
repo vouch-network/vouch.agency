@@ -163,7 +163,7 @@ export const GunProvider = ({ children, sessionUser }: Props) => {
       try {
         await Promise.all([
           axios
-            .post(`/api/private/tokens`, sessionUser, {
+            .post(`/api/network/tokens`, sessionUser, {
               cancelToken: credsRequestCancelTokenRef.current.token,
             })
             .then(({ data }) => {
@@ -171,7 +171,7 @@ export const GunProvider = ({ children, sessionUser }: Props) => {
               accessTokenRef.current = data.accessToken;
             }),
           axios
-            .post(`/api/private/certificates`, sessionUser, {
+            .post(`/api/network/certificates`, sessionUser, {
               cancelToken: credsRequestCancelTokenRef.current.token,
             })
             .then(({ data }) => {

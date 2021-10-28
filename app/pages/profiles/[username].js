@@ -65,8 +65,11 @@ export default function Profile({ profile }) {
             {profile.username && (
               <Paragraph margin="none">
                 Send inquiries to{' '}
-                <Anchor href={`mailto:${profile.username}@vouch.agency`}>
-                  {profile.username}@vouch.agency
+                <Anchor
+                  href={`mailto:${profile.username}@${process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}`}
+                >
+                  {profile.username}@
+                  {process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}
                 </Anchor>
                 .
               </Paragraph>
@@ -101,7 +104,7 @@ Profile.getLayout = function getLayout(page) {
 
 export async function getStaticPaths() {
   // const res = await fetch(
-  //   `${process.env.NEXT_PUBLIC_BASE_URL}/api/public/profiles`
+  //   `${process.env.NEXT_PUBLIC_BASE_URL}/api/agency/profiles`
   // );
   // const profiles = await res.json();
 
@@ -121,7 +124,7 @@ export async function getStaticPaths() {
 
 export async function getStaticProps({ params }) {
   // const res = await fetch(
-  //   `${process.env.NEXT_PUBLIC_BASE_URL}/api/public/profiles/${params.username}`
+  //   `${process.env.NEXT_PUBLIC_BASE_URL}/api/agency/profiles/${params.username}`
   // );
   // const profile = await res.json();
 

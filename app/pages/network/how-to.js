@@ -43,6 +43,18 @@ export default function HowTo() {
         </Text>
       </Box>
 
+      <Box id="email-forwarding" as="section">
+        <Text as="h2">Update your contact email address</Text>
+        <Text as="p">
+          Your Vouch email address ending in @
+          {process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN} is a forwarding email
+          address. That means there is no inbox for you to check, and emails
+          that are sent to this address are forwarded directly to the email
+          address you provide. The sender can only see your contact email if and
+          when you reply.
+        </Text>
+      </Box>
+
       <Box id="profile-visibility" as="section">
         <Text as="h2">Control your profile visibility</Text>
         <Text as="p">

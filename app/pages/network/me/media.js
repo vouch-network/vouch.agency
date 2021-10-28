@@ -72,7 +72,7 @@ export default function UserMedia() {
       const dataArr = await Promise.all(
         files.map((file) =>
           axios
-            .post(`/api/private/media/upload`, file, {
+            .post(`/api/network/media/upload`, file, {
               headers: {
                 'content-type': file.type,
                 // prefix with current time to prevent b2
@@ -104,7 +104,7 @@ export default function UserMedia() {
   const removeMedia = async (media) => {
     try {
       const { data } = await axios.delete(
-        `/api/private/media/${media.id}?fileName=${encodeURIComponent(
+        `/api/network/media/${media.id}?fileName=${encodeURIComponent(
           media.fileName
         )}`
       );

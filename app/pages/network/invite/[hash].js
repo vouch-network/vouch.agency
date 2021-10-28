@@ -41,7 +41,7 @@ function ValidateInviteForm({ isSubmitting, onSubmit }) {
             id="inviterUsername-input"
             name="inviterUsername"
             reverse
-            icon={<Text>@vouch.agency</Text>}
+            icon={<Text>@{process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}</Text>}
             required
           />
         </FormField>
@@ -132,7 +132,9 @@ function SignUpForm({ invitedByUsername }) {
               id="username-input"
               name="username"
               reverse
-              icon={<Text>@vouch.agency</Text>}
+              icon={
+                <Text>@{process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}</Text>
+              }
               placeholder="you"
               required
             />
@@ -159,7 +161,10 @@ function SignUpForm({ invitedByUsername }) {
       <Box gap="medium">
         <Text as="p" margin="none">
           Your Vouch email will be{' '}
-          <Text color="accent-2">{value.username}@vouch.agency</Text>.{' '}
+          <Text color="accent-2">
+            {value.username}@{process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}
+          </Text>
+          .{' '}
           <Anchor size="small" onClick={() => setHasUsername(false)}>
             (edit)
           </Anchor>
@@ -217,7 +222,10 @@ function SignUpForm({ invitedByUsername }) {
     <Box gap="medium">
       <Text as="p" margin="none">
         Your Vouch email will be{' '}
-        <Text color="accent-2">{value.username}@vouch.agency</Text>.{' '}
+        <Text color="accent-2">
+          {value.username}@{process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}
+        </Text>
+        .{' '}
         <Anchor size="small" onClick={() => setHasUsername(false)}>
           (edit)
         </Anchor>
@@ -304,9 +312,12 @@ export default function Join() {
       setJoinState(STATE.isValidating);
 
       const { data } = await axios.post(
-        `/api/public/invites/validate/${router.query.hash}`,
+        `/api/agency/invites/validate/${router.query.hash}`,
         {
-          username: value.inviterUsername.replace('@vouch.agency', ''),
+          username: value.inviterUsername.replace(
+            `@${process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}`,
+            ''
+          ),
           passcode: value.passcode.replace(/\-/g, ''),
           expiresAt,
         }
@@ -341,8 +352,9 @@ export default function Join() {
                 This invitation is not valid.
               </Text>
               <Text as="p" margin={{ bottom: 'none' }}>
-                Check the username (it should end with @vouch.agency) and
-                6-number passcode in your invite and try again.
+                Check the username (it should end with @
+                {process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}) and 6-number
+                passcode in your invite and try again.
               </Text>
             </Box>
           )}

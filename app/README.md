@@ -64,19 +64,19 @@ Ends user session
 
 Gets current user from session
 
-### POST `/api/private/certificates`
+### POST `/api/network/certificates`
 
 Creates new certificate to use with `gun.put` to non-user spaces
 
-### GET `/api/private/tokens`
+### GET `/api/network/tokens`
 
 Creates new token to use with gun relay server (see [Gun relay server](../server))
 
-### GET `/api/private/invites/generate`
+### GET `/api/network/invites/generate`
 
 Generates new invite from current user session
 
-### GET `/api/public/invites/validate/[hash]`
+### GET `/api/agency/invites/validate/[hash]`
 
 Validates invite
 
