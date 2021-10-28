@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Box, Button, Form, FormField, Text, TextInput } from 'grommet';
@@ -13,7 +14,9 @@ function AccountInfoForm({ onSubmit, userSettings }) {
     contactEmail: userSettings.contactEmail || '',
     // username: username || '',
   });
+  const [isSubmitting, setIsSubmitting] = useState();
   const [sucessMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleChange = (nextValue) => {
     if (sucessMessage) setSuccessMessage('');
@@ -22,13 +25,29 @@ function AccountInfoForm({ onSubmit, userSettings }) {
   };
 
   const handleSubmit = async () => {
+    setErrorMessage();
+    setIsSubmitting(true);
+
     try {
       await onSubmit(value);
 
-      setSuccessMessage('Saved account information');
+      try {
+        await axios.put('/api/network/emails/aliases', {
+          destinationEmail: value.contactEmail,
+          createOnNotFound: true,
+        });
+
+        setSuccessMessage('Updated forwarding email address.');
+      } catch (err) {
+        console.error(err);
+        setErrorMessage('Could not update forwarding email');
+      }
     } catch (err) {
-      // TODO show error
+      console.error(err);
+      setErrorMessage('Could not save changes');
     }
+
+    setIsSubmitting();
   };
 
   return (
@@ -37,6 +56,11 @@ function AccountInfoForm({ onSubmit, userSettings }) {
         {sucessMessage && (
           <Box>
             <Text color="status-ok">{sucessMessage}</Text>
+          </Box>
+        )}
+        {errorMessage && (
+          <Box>
+            <Text color="status-error">{errorMessage}</Text>
           </Box>
         )}
 
@@ -50,7 +74,7 @@ function AccountInfoForm({ onSubmit, userSettings }) {
             <TextInput
               id="username-input"
               name="username"
-              value={`${userSettings.username}@vouch.agency`}
+              value={`${userSettings.username}@${process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}`}
               readOnly
             />
           </FormField>
@@ -58,6 +82,14 @@ function AccountInfoForm({ onSubmit, userSettings }) {
             name="contactEmail"
             htmlFor="contactEmail-input"
             label="Private contact email address"
+            info={
+              <Text size="small">
+                This is the email address that your Vouch email address forwards
+                to.{' '}
+                <Link href="/network/how-to#email-forwarding">Learn more</Link>
+              </Text>
+            }
+            required
           >
             <TextInput
               id="contactEmail-input"
@@ -73,7 +105,12 @@ function AccountInfoForm({ onSubmit, userSettings }) {
         </Box>
 
         <Box align="center">
-          <Button type="submit" label="Save changes" primary />
+          <Button
+            type="submit"
+            label="Save changes"
+            primary
+            disabled={isSubmitting}
+          />
         </Box>
       </Box>
     </Form>

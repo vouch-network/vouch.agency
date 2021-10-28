@@ -1,16 +1,44 @@
+import axios from 'axios';
 import React, { useState } from 'react';
 import { Box, Button, Form, Text, TextInput } from 'grommet';
 
 function EmailForm({ onSubmit }) {
   const [value, setValue] = useState({ contactEmail: '' });
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState();
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+
+    try {
+      await axios.post('/api/network/emails/aliases', {
+        destinationEmail: value.contactEmail,
+      });
+
+      onSubmit({ value });
+    } catch (err) {
+      console.error(err);
+
+      setErrorMessage('Something went wrong saving that email');
+    }
+
+    setIsSubmitting();
+  };
 
   return (
     <Form
       value={value}
       onChange={(nextValue) => setValue(nextValue)}
-      onSubmit={onSubmit}
+      onSubmit={handleSubmit}
     >
       <Box gap="small">
+        {errorMessage && (
+          <Box background="light-1" pad="small" round="small">
+            <Text color="status-error">{errorMessage}</Text>
+            <Text>Contact sua if you keep getting an error</Text>
+          </Box>
+        )}
+
         <TextInput
           id="contactEmail-input"
           name="contactEmail"
@@ -20,7 +48,12 @@ function EmailForm({ onSubmit }) {
         />
 
         <Box align="center">
-          <Button type="submit" label="Set email" primary />
+          <Button
+            type="submit"
+            label="Set email"
+            primary
+            disabled={isSubmitting}
+          />
         </Box>
       </Box>
     </Form>
@@ -73,11 +106,17 @@ export default function PostSignUpScreen({
         <Box width="30em" gap="small">
           <Text weight="bold">Set your private contact email address</Text>
           <Text size="medium">
-            This is the email address that your Vouch email address (
-            <Text color="neutral-1">{userSettings.username}@vouch.agency</Text>)
-            will forward to. This email address <strong>will not</strong> be
-            visible on your public profile and will only be visible when you
-            reply to an email.
+            Your Vouch email address (
+            <Text color="neutral-1">
+              {userSettings.username}@
+              {process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}
+            </Text>
+            ) will forward to this email address.
+          </Text>
+          <Text size="medium">
+            This email <strong>will not</strong> be visible on your public
+            profile and will only be visible to the sender once you reply to an
+            email. You can change it later.
           </Text>
           {!userSettings.contactEmail && (
             <Box>

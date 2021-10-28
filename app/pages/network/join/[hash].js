@@ -41,7 +41,9 @@ function SignUpForm({ invitedByUsername }) {
               id="invitedBy-input"
               name="invitedBy"
               reverse
-              icon={<Text>@vouch.agency</Text>}
+              icon={
+                <Text>@{process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}</Text>
+              }
               placeholder="member"
               required
             />
@@ -59,7 +61,9 @@ function SignUpForm({ invitedByUsername }) {
               id="username-input"
               name="username"
               reverse
-              icon={<Text>@vouch.agency</Text>}
+              icon={
+                <Text>@{process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}</Text>
+              }
               placeholder="you"
               required
             />

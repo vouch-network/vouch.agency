@@ -36,7 +36,9 @@ function LoginForm({ isSubmitting, onSubmit }) {
               id="username-input"
               name="username"
               reverse
-              icon={<Text>@vouch.agency</Text>}
+              icon={
+                <Text>@{process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}</Text>
+              }
               required
             />
           </FormField>

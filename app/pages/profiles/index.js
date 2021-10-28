@@ -92,7 +92,7 @@ Profiles.getLayout = function getLayout(page) {
 
 export async function getStaticProps({ params }) {
   // const res = await fetch(
-  //   `${process.env.NEXT_PUBLIC_BASE_URL}/api/public/profiles`
+  //   `${process.env.NEXT_PUBLIC_BASE_URL}/api/agency/profiles`
   // );
   // const profiles = await res.json();
 

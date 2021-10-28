@@ -32,10 +32,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         try {
           const { data: profilePhotoData } = await axios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/api/public/media/profile-photos?username=${username}`
+            `${process.env.NEXT_PUBLIC_BASE_URL}/api/agency/media/profile-photos?username=${username}`
           );
           const { data: mediaData } = await axios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/api/public/media/${username}`
+            `${process.env.NEXT_PUBLIC_BASE_URL}/api/agency/media/${username}`
           );
 
           userMedia.profilePhoto = profilePhotoData;

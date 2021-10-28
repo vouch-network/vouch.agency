@@ -26,14 +26,14 @@ export default function InviteForm() {
     setInviteExpiresAt(expiresAt);
 
     const { data } = await axios.get(
-      `/api/private/invites/generate?expiresAt=${expiresAt}`
+      `/api/network/invites/generate?expiresAt=${expiresAt}`
     );
 
     setInviteMessage(
       [
         `Sign up for Vouch Network at this link:`,
         `${data.invite_url}\n`,
-        `  You are invited by ${userSettings.username}@vouch.agency`,
+        `  You are invited by ${userSettings.username}@${process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}`,
         `  Your passcode is ${data.passcode.slice(0, 3)}-${data.passcode.slice(
           3
         )}`,

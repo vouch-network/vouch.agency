@@ -46,8 +46,8 @@ export default function PublicLayout({ children }) {
         >
           <FixedBarText>
             <Paragraph size="medium">
-              <Anchor href="mailto:world@vouch.agency">
-                world@vouch.agency
+              <Anchor href="mailto:contact@vouch.agency">
+                contact@vouch.agency
               </Anchor>
             </Paragraph>
           </FixedBarText>
