@@ -1,16 +1,47 @@
+import axios from 'axios';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Box, Paragraph, Heading, Text } from 'grommet';
+import NextImage from 'next/image';
+import { useEffect, useState } from 'react';
+import { Box, Paragraph, Heading, Text, Image } from 'grommet';
 
+import useGun from 'components/useGun';
 import PublicLayout from 'components/PublicLayout';
 import PublicNav from 'components/PublicNav';
+import Square from 'components/Square';
 import VouchText from 'components/VouchText';
 import vouchLogo from 'public/images/vouch-logo.svg';
+import { GUN_PATH, GUN_KEY, GUN_VALUE } from 'utils/constants';
+import { expandDataKeys } from 'utils/gunDB';
 
 const logoRatio = 20 / 100;
 
-export default function Profiles({ profiles }) {
-  // console.log('profiles:', profiles);
+export default function Profiles({ aliases }) {
+  const { getGun, isReady } = useGun();
+  const [profilesByUsername, setProfilesByUsername] = useState({});
+
+  useEffect(() => {
+    if (isReady) {
+      aliases.forEach(({ username }) => {
+        getGun()
+          .get(`~@${username}`)
+          .get({ '.': { '*': '~' } })
+          .get(`${username}/${GUN_PATH.profile}`)
+          .get(GUN_KEY.profilePhoto)
+          .get('url')
+          .once((profilePhotoUrl) => {
+            // TODO check profile[GUN_KEY.isListed]
+            if (profilePhotoUrl) {
+              setProfilesByUsername((p) => ({
+                ...p,
+                [username]: {
+                  profilePhotoUrl,
+                },
+              }));
+            }
+          });
+      });
+    }
+  }, [isReady]);
 
   return (
     <Box width="xlarge" gap="medium">
@@ -42,7 +73,7 @@ export default function Profiles({ profiles }) {
             height={`${200 * logoRatio}px`}
             margin={{ top: '.5rem' }}
           >
-            <Image src={vouchLogo} alt="Vouch" />
+            <NextImage src={vouchLogo} alt="Vouch" />
           </Box>
           <Text size="2em" weight={900}>
             DIRECTORY
@@ -58,15 +89,21 @@ export default function Profiles({ profiles }) {
           </Paragraph>
         </Box>
       </Box>
-      <Box height="medium" align="center" justify="center">
+      {/* <Box height="medium" align="center" justify="center">
         <Paragraph size="xlarge">coming soon.</Paragraph>
-      </Box>
+      </Box> */}
       <Box pad="small">
-        {profiles.map((p) => (
-          <Box key={p.id}>
-            <Link href={`/profiles/${p.username}`}>{p.username}</Link>
-          </Box>
-        ))}
+        {Object.entries(profilesByUsername).map(
+          ([username, { profilePhotoUrl }]) => (
+            <Box key={username}>
+              <Link href={`/profiles/${username}`}>
+                <Square width="medium" elevation="small" round="xsmall">
+                  <Image src={profilePhotoUrl} fit="cover" alt={username} />
+                </Square>
+              </Link>
+            </Box>
+          )
+        )}
       </Box>
     </Box>
   );
@@ -91,20 +128,29 @@ Profiles.getLayout = function getLayout(page) {
 };
 
 export async function getStaticProps({ params }) {
-  // const res = await fetch(
-  //   `${process.env.NEXT_PUBLIC_BASE_URL}/api/agency/profiles`
-  // );
-  // const profiles = await res.json();
+  // TODO cache this request
+  const { data } = await axios.get(
+    `https://api.forwardemail.net/v1/domains/${process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}/aliases`,
+    {
+      auth: {
+        username: process.env.FORWARD_EMAIL_API_KEY,
+        password: '',
+      },
+    }
+  );
 
-  // TODO
-  const profiles = [];
+  const aliases = data
+    .filter((alias) => alias.is_enabled)
+    .map((alias) => ({
+      username: alias.name,
+    }));
 
   // Pass profile data to the page via props
   return {
-    props: { profiles },
+    props: { aliases },
     // Next.js will attempt to re-generate the page:
     // - When a request comes in
     // - At most once every N seconds
-    revalidate: 60, // In seconds
+    revalidate: 60 * 5, // In seconds
   };
 }
