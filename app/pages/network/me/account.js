@@ -3,10 +3,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Box, Button, Form, FormField, Text, TextInput } from 'grommet';
 
-import { withGunAuthGate } from 'components/GunAuthGate';
 import useUser from 'components/useUser';
 import NetworkLayout from 'components/NetworkLayout';
-import LoggedInLayout from 'components/LoggedInLayout';
 import UserLayout from 'components/UserLayout';
 
 function AccountInfoForm({ onSubmit, userSettings }) {
@@ -89,7 +87,7 @@ function AccountInfoForm({ onSubmit, userSettings }) {
                 <Link href="/network/how-to#email-forwarding">Learn more</Link>
               </Text>
             }
-            required
+            disabled
           >
             <TextInput
               id="contactEmail-input"
@@ -98,26 +96,24 @@ function AccountInfoForm({ onSubmit, userSettings }) {
             />
           </FormField>
 
-          <Text size="small">
-            {/* TODO change password */}
-            Password change coming soon
-          </Text>
+          {/* TODO */}
+          <Text size="small">Ability to update email coming soon</Text>
         </Box>
 
-        <Box align="center">
+        {/* <Box align="center">
           <Button
             type="submit"
             label="Save changes"
             primary
             disabled={isSubmitting}
           />
-        </Box>
+        </Box> */}
       </Box>
     </Form>
   );
 }
 
-export default function UserAccount() {
+function UserAccount() {
   const { userSettings, saveUserSettings } = useUser();
 
   return (
@@ -135,14 +131,14 @@ export default function UserAccount() {
   );
 }
 
-export const getServerSideProps = withGunAuthGate();
-
 UserAccount.getLayout = function getLayout(page) {
   return (
     <NetworkLayout>
-      <LoggedInLayout>
-        <UserLayout>{page}</UserLayout>
-      </LoggedInLayout>
+      <UserLayout>{page}</UserLayout>
     </NetworkLayout>
   );
 };
+
+UserAccount.authRequired = true;
+
+export default UserAccount;

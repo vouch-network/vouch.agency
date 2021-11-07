@@ -1,25 +1,49 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 
-import withSessionRequired, { getUser, NextIronRequest } from 'lib/session';
+import { withAuthApiUser, withAuthApi, getUser } from 'lib/auth';
+import { GUN_PREFIX, GUN_PATH, GUN_KEY } from 'utils/constants';
 
 if (!process.env.APP_ACCESS_TOKEN_SECRET) {
   throw new Error('APP_ACCESS_TOKEN_SECRET in env environment required');
 }
 
-const APP_ACCESS_TOKEN_SECRET = process.env.APP_ACCESS_TOKEN_SECRET;
+if (!process.env.APP_ENCRYPTION_SECRET) {
+  throw new Error('APP_ENCRYPTION_SECRET in env environment required');
+}
 
-const tokensHandler = async (req: NextIronRequest, res: NextApiResponse) => {
+// Create token to allow `.put` access to gunDB
+const tokensHandler = (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   if (method === 'POST') {
-    const { username, pub } = getUser(req);
+    const { id } = getUser(req)!;
 
-    const token = jwt.sign({ username, pub }, APP_ACCESS_TOKEN_SECRET, {
-      expiresIn: '2h',
-    });
+    // Allow `.put` to path if path or subpath matches glob
+    const permissionsGlobs = [
+      // e.g. gun.get('id:id_1').put('something')
+      `${GUN_PREFIX.id}:${id}`,
+      // e.g. gun.get('id:id_1/profile').put('something')
+      `${GUN_PREFIX.id}:${id}/*`,
+      // e.g. gun.get('username:username_1').get('id:id_1').put('something')
+      `*/${GUN_PREFIX.id}:${id}`,
+      // e.g. gun.get('username:username_1').get('id:id_1').get('something').put('something')
+      `*/${GUN_PREFIX.id}:${id}/*`,
+    ];
 
-    res.status(201).send({
+    const permissions = `{${permissionsGlobs.join(',')}}`;
+
+    const token = jwt.sign(
+      {
+        permissions,
+      },
+      process.env.APP_ACCESS_TOKEN_SECRET!,
+      {
+        expiresIn: '2h',
+      }
+    );
+
+    res.status(201).json({
       accessToken: token,
     });
   } else {
@@ -28,4 +52,4 @@ const tokensHandler = async (req: NextIronRequest, res: NextApiResponse) => {
   }
 };
 
-export default withSessionRequired(tokensHandler);
+export default withAuthApiUser(tokensHandler);

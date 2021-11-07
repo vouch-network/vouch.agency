@@ -3,6 +3,7 @@ export const PROFILE_PHOTOS_PREFIX = 'profile-photo_';
 
 export interface Media {
   id?: string;
+  name?: string;
   url: string;
   timestamp?: number;
   fileName?: string;

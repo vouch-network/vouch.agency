@@ -14,10 +14,8 @@ import {
 } from 'grommet';
 import { format } from 'fecha';
 
-import { withGunAuthGate } from 'components/GunAuthGate';
 import useUser from 'components/useUser';
 import NetworkLayout from 'components/NetworkLayout';
-import LoggedInLayout from 'components/LoggedInLayout';
 import UserLayout from 'components/UserLayout';
 import { MB_BYTES, MAX_FILE_SIZE } from 'utils/media';
 
@@ -46,7 +44,7 @@ function FilePreview({ file, isFileValid }) {
   );
 }
 
-export default function UserMedia() {
+function UserMedia() {
   const { userProfile, setUserProfile } = useUser();
   // FIXME can't seem to reset file input, so just rerender it...
   const [showUploadInput, setShowUploadInput] = useState();
@@ -246,14 +244,14 @@ export default function UserMedia() {
   );
 }
 
-export const getServerSideProps = withGunAuthGate();
-
 UserMedia.getLayout = function getLayout(page) {
   return (
     <NetworkLayout>
-      <LoggedInLayout>
-        <UserLayout>{page}</UserLayout>
-      </LoggedInLayout>
+      <UserLayout>{page}</UserLayout>
     </NetworkLayout>
   );
 };
+
+UserMedia.authRequired = true;
+
+export default UserMedia;

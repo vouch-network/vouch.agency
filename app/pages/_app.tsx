@@ -1,17 +1,20 @@
 import type { NextComponentType, NextPageContext } from 'next';
-// import { UserProvider } from '@auth0/nextjs-auth0';
 import { createGlobalStyle } from 'styled-components';
 import { Grommet } from 'grommet';
 
 import { GunProvider } from 'components/useGun';
 import { UserProvider } from 'components/useUser';
+import { AuthProvider } from 'components/useAuth';
+import { SessionChannelProvider } from 'components/useSessionChannel';
+import AuthGate from 'components/AuthGate';
 import theme, { colors } from 'utils/theme';
 
-// custom AppProps type to accomodate layout
+// custom AppProps
 type AppProps = {
   pageProps: any;
   Component: NextComponentType<NextPageContext, any, {}> & {
-    getLayout: (page?: any) => any;
+    getLayout?: (page?: any) => any;
+    authRequired?: boolean;
   };
 };
 
@@ -40,6 +43,7 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const authRequired = Component.authRequired || false;
   // Use the layout defined at the page level, if available
   const getLayout = Component.getLayout || ((page) => page);
 
@@ -47,11 +51,19 @@ function MyApp({ Component, pageProps }: AppProps) {
     <>
       <GlobalStyle />
       <Grommet full theme={theme}>
-        <GunProvider sessionUser={pageProps.user}>
-          <UserProvider user={pageProps.user}>
-            {getLayout(<Component {...pageProps} />)}
-          </UserProvider>
-        </GunProvider>
+        <SessionChannelProvider>
+          <AuthProvider>
+            <GunProvider>
+              <UserProvider>
+                {authRequired ? (
+                  <AuthGate>{getLayout(<Component {...pageProps} />)}</AuthGate>
+                ) : (
+                  getLayout(<Component {...pageProps} />)
+                )}
+              </UserProvider>
+            </GunProvider>
+          </AuthProvider>
+        </SessionChannelProvider>
       </Grommet>
     </>
   );

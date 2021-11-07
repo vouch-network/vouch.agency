@@ -10,7 +10,7 @@ import PublicNav from 'components/PublicNav';
 import Square from 'components/Square';
 import VouchText from 'components/VouchText';
 import vouchLogo from 'public/images/vouch-logo.svg';
-import { GUN_PATH, GUN_KEY, GUN_VALUE } from 'utils/constants';
+import { GUN_PATH, GUN_KEY } from 'utils/constants';
 import { expandDataKeys } from 'utils/gunDB';
 
 const logoRatio = 20 / 100;

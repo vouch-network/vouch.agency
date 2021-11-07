@@ -1,4 +1,4 @@
-import { GUN_PATH, GUN_KEY } from 'utils/constants';
+import { GUN_PREFIX, GUN_KEY } from 'utils/constants';
 
 // prepare form values before saving to gunDB
 export const prepareFormValues = (value: any) =>
@@ -32,20 +32,26 @@ const swappedKeyMap = Object.keys(GUN_KEY).reduce(
 );
 
 export const expandDataKeys = (value: any) =>
-  Object.keys(value).reduce((acc, key) => {
-    if (typeof value[key] === 'undefined') {
-      return acc;
-    }
+  value
+    ? Object.keys(value).reduce((acc, key) => {
+        if (typeof value[key] === 'undefined') {
+          return acc;
+        }
 
-    // @ts-ignore
-    const expandedKey = swappedKeyMap[key];
+        // @ts-ignore
+        const expandedKey = swappedKeyMap[key];
 
-    if (!expandedKey) {
-      return acc;
-    }
+        if (!expandedKey) {
+          return acc;
+        }
 
-    return {
-      ...acc,
-      [expandedKey]: value[key],
-    };
-  }, {});
+        return {
+          ...acc,
+          [expandedKey]: value[key],
+        };
+      }, {})
+    : {};
+
+// Parse ID from path, e.g. `id:some_id`
+export const parseId = (value: string): string =>
+  typeof value === 'string' ? value.slice(GUN_PREFIX.id.length + 1) : '';

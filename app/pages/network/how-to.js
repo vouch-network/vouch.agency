@@ -2,10 +2,8 @@ import axios from 'axios';
 import { Box, Button, Text, Anchor } from 'grommet';
 import styled from 'styled-components';
 
-import { withGunAuthGate } from 'components/GunAuthGate';
 import useUser from 'components/useUser';
 import NetworkLayout from 'components/NetworkLayout';
-import LoggedInLayout from 'components/LoggedInLayout';
 
 const Wrapper = styled(Box)`
   p {
@@ -14,7 +12,7 @@ const Wrapper = styled(Box)`
   }
 `;
 
-export default function HowTo() {
+function HowTo() {
   const { userProfile } = useUser();
 
   return (
@@ -153,8 +151,10 @@ export default function HowTo() {
   );
 }
 
-export const getServerSideProps = withGunAuthGate();
-
 HowTo.getLayout = function getLayout(page) {
   return <NetworkLayout>{page}</NetworkLayout>;
 };
+
+HowTo.authRequired = true;
+
+export default HowTo;

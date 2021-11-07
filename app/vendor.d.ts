@@ -7,3 +7,4 @@ declare module 'gun/lib/radisk';
 declare module 'gun/lib/store';
 declare module 'gun/lib/rindexed';
 declare module 'gun/lib/then';
+declare module 'gun/lib/load';

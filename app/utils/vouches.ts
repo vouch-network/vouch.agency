@@ -3,13 +3,13 @@ export const VouchType = {
   Vouched: 1,
 };
 
-enum VouchTypeEnum {
+export enum VouchTypeEnum {
   Unvouched = 0,
   Vouched = 1,
 }
 
 export interface Vouch {
-  byUsername: string;
   vouchType: VouchTypeEnum;
   timestamp: number;
+  username?: string;
 }

@@ -1,12 +1,12 @@
 import crypto from 'crypto';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-import withSessionRequired, { getUser, NextIronRequest } from 'lib/session';
+import { withAuthApiUser, getUser } from 'lib/auth';
 
 const INVITE_SECRET = process.env.INVITE_SECRET;
 
 const generateInviteHandler = async (
-  req: NextIronRequest,
+  req: NextApiRequest,
   res: NextApiResponse
 ) => {
   const { query, method } = req;
@@ -45,4 +45,4 @@ const generateInviteHandler = async (
   }
 };
 
-export default withSessionRequired(generateInviteHandler);
+export default withAuthApiUser(generateInviteHandler);

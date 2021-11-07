@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Box, Button, Text, Nav } from 'grommet';
 import styled from 'styled-components';
 
-import PostSignUpScreen from 'components/me/PostSignUpScreen';
 import useUser from 'components/useUser';
 import { colors } from 'utils/theme';
 
@@ -26,35 +25,11 @@ const Tab = styled(Box)`
 
 export default function UserLayout({ children }) {
   const router = useRouter();
-  const {
-    user,
-    userProfile,
-    userSettings,
-    saveUserSettings,
-    saveUserProfile,
-    toggleProfileVisibility,
-    isSettingsReady,
-    isProfileReady,
-  } = useUser();
+  const { userSettings, userProfile } = useUser();
 
-  if (!isProfileReady || !isSettingsReady) {
+  if (!userSettings || !userProfile) {
+    // TODO handle
     return null;
-  }
-
-  if (
-    (isProfileReady && !userProfile?.displayName) ||
-    (isSettingsReady && !userSettings?.contactEmail)
-  ) {
-    return (
-      <Box margin={{ top: 'xlarge' }}>
-        <PostSignUpScreen
-          userProfile={userProfile}
-          userSettings={userSettings}
-          onSetPrivateEmail={saveUserSettings}
-          onSetDisplayName={saveUserProfile}
-        />
-      </Box>
-    );
   }
 
   return (

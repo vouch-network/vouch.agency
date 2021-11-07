@@ -37,4 +37,4 @@ const validateInviteHandler = async (
   }
 };
 
-export default withSlowDown(validateInviteHandler);
+export default withSlowDown()(validateInviteHandler);
