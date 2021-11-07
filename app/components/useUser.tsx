@@ -1,283 +1,141 @@
+import axios from 'axios';
 import { useState, useEffect, useRef, createContext, useContext } from 'react';
-import type { IGunChainReference } from 'gun/types/chain';
 
 import useGun from 'components/useGun';
-import type { GunUser, PrivateProfile, PublicProfile } from 'utils/profiles';
-import type { Vouch } from 'utils/vouches';
-import { prepareFormValues } from 'utils/gunDB';
-import { GUN_PATH, GUN_KEY, GUN_VALUE } from 'utils/constants';
-
-const NEXT_PUBLIC_GUN_APP_PUBLIC_KEY =
-  process.env.NEXT_PUBLIC_GUN_APP_PUBLIC_KEY;
+import type { AuthUser } from 'utils/auth';
+import type { PrivateProfile, PublicProfile } from 'utils/profiles';
+import { prepareFormValues, expandDataKeys } from 'utils/gunDB';
+import { GUN_PREFIX, GUN_PATH, GUN_KEY } from 'utils/constants';
+import useAuth from 'components/useAuth';
 
 interface Props {
   children: React.ReactNode;
-  // user from server session
-  user?: GunUser;
 }
 
 interface ContextValue {
-  error: Error | undefined | null;
-  user: GunUser | undefined | null;
   userSettings: PrivateProfile | undefined | null;
   userProfile: PublicProfile | undefined | null;
-  vouches: { [timestamp: number]: Vouch };
   saveUserSettings: (value: Partial<PrivateProfile>) => void;
   saveUserProfile: (value: Partial<PublicProfile>) => void;
   toggleProfileVisibility: (value: boolean) => void;
-  isSettingsReady: boolean | undefined;
-  isProfileReady: boolean | undefined;
 }
 
 // TODO memo
 const UserContext = createContext<ContextValue>({
-  error: undefined,
-  user: undefined,
   userSettings: undefined,
   userProfile: undefined,
-  vouches: {},
   saveUserSettings: () => {},
   saveUserProfile: () => {},
   toggleProfileVisibility: () => {},
-  isSettingsReady: false,
-  isProfileReady: false,
 });
 
-export const UserProvider = ({ children, user }: Props) => {
-  const gunEventRef = useRef<{ [key: string]: any }>({});
-  const {
-    isReady,
-    getGun,
-    getUser,
-    getCertificate,
-    isAuthenticated,
-    triggerReauthentication,
-  } = useGun();
+export const UserProvider = ({ children }: Props) => {
+  const { isLoggedIn, getUser } = useAuth();
+  const { isGetReady, getGun } = useGun();
   const [privProfile, setPrivProfile] = useState<PrivateProfile | null>();
   const [pubProfile, setPubProfile] = useState<PublicProfile | null>();
-  const [vouches, setVouches] = useState<any>({});
-  const [error, setError] = useState<Error | null>();
-  const [isSettingsReady, setIsSettingsReady] = useState<boolean>();
-  const [isProfileReady, setIsProfileReady] = useState<boolean>();
 
-  const isUserReady = isReady && user;
+  const getPrivProfile = async () => {
+    const user = await getUser();
+    if (!user) return;
 
-  useEffect(() => {
-    setError(null);
+    const gun = getGun()!;
 
-    if (isUserReady && !privProfile) {
-      setPrivProfile({
-        username: user.username,
-      });
-    }
-  }, [isUserReady, privProfile]);
+    const username = await gun
+      .get(`${GUN_PREFIX.id}:${user.id}`)
+      .get(GUN_KEY.username)
+      // @ts-ignore
+      .then();
 
-  useEffect(() => {
-    let userPath: IGunChainReference;
-
-    if (isUserReady && !isSettingsReady) {
-      // getUser() may not work in cases where we have a session
-      // but the browser is not logged in with gun auth yet
-      userPath = getGun()!.get(`~${user.pub}`);
-
-      // fill out private profile
-      userPath.get(`${user.username}/${GUN_PATH.settings}`).on(
-        (data) => {
-          if (data) {
-            // @ts-ignore
-            setPrivProfile((p) => ({
-              ...p,
-              contactEmail: data[GUN_KEY.contactEmail] || '',
-            }));
-          }
-
-          if (!isSettingsReady) setIsSettingsReady(true);
-        },
-        {
-          change: true,
-        }
-      );
-
-      // get vouches
-      userPath
-        .get(GUN_PATH.vouches)
-        .map()
-        .get(user.username)
-        .on(
-          (data) => {
-            setVouches((p: any) => ({
-              ...p,
-              [data[GUN_KEY.timestamp]]: {
-                byUsername: data[GUN_KEY.byUsername],
-                vouchType: data[GUN_KEY.vouchType],
-              },
-            }));
-          },
-          {
-            change: true,
-          }
-        );
-    }
-
-    // TODO .off
-    return () => {
-      if (userPath?.off) userPath.off();
-    };
-  }, [isUserReady, isSettingsReady]);
-
-  useEffect(() => {
-    let userPath: IGunChainReference;
-
-    if (isUserReady && !isProfileReady) {
-      // getUser() may not work in cases where we have a session
-      // but the browser is not logged in with gun auth yet
-      userPath = getGun()!.get(`~${user.pub}`);
-
-      // fill out public profile
-      userPath
-        .get(`${user.username}/${GUN_PATH.profile}`)
-        .on(
-          (data) => {
-            if (data) {
-              // @ts-ignore
-              setPubProfile((p) => ({
-                ...p,
-                displayName: data[GUN_KEY.displayName] || '',
-                pronouns: data[GUN_KEY.pronouns] || '',
-                location: data[GUN_KEY.location] || '',
-                bio: data[GUN_KEY.bio] || '',
-                isListed: data[GUN_KEY.isListed] || '',
-              }));
-            }
-
-            if (data?.[GUN_KEY.profilePhoto]) {
-              // profile will be set as ready in next chain
-            } else {
-              if (!isProfileReady) setIsProfileReady(true);
-            }
-          },
-          {
-            change: true,
-          }
-        )
-        .get(GUN_KEY.profilePhoto)
-        .on(
-          (data) => {
-            if (data) {
-              // @ts-ignore
-              setPubProfile((p) => ({
-                ...p,
-                profilePhoto: data,
-              }));
-            }
-
-            if (!isProfileReady) setIsProfileReady(true);
-          },
-          {
-            change: true,
-          }
-        );
-
-      // get vouches
-      userPath
-        .get(GUN_PATH.vouches)
-        .map()
-        .get(user.username)
-        .on(
-          (data) => {
-            setVouches((p: any) => ({
-              ...p,
-              [data[GUN_KEY.timestamp]]: {
-                byUsername: data[GUN_KEY.byUsername],
-                vouchType: data[GUN_KEY.vouchType],
-              },
-            }));
-          },
-          {
-            change: true,
-          }
-        );
-    }
-
-    // TODO .off
-    return () => {
-      if (userPath?.off) userPath.off();
-    };
-  }, [isUserReady, Boolean(vouches)]);
-
-  // we may need to reauthenticate if session was loaded from the server
-  // TODO reauthenticate if token or cert expired
-  const checkReAuthenticate = async () => {
-    // @ts-ignore
-    const gunUser = getUser()!.is;
-
-    if (!gunUser) {
-      try {
-        await triggerReauthentication(user!.username);
-      } catch (err) {
-        // TODO show error to user
-        console.error(err);
-      }
-    }
+    setPrivProfile({
+      id: user.id,
+      username: username,
+      contactEmail: user.email,
+    });
   };
 
-  // value must be entire profile, or it will be overwritten
-  const saveUserSettings = async (value: Partial<PrivateProfile>) => {
-    await checkReAuthenticate();
+  const getPubProfile = async () => {
+    const user = await getUser();
+    if (!user) return;
 
-    getUser()
-      ?.get(`${user!.username}/${GUN_PATH.settings}`)
-      .put(prepareFormValues(value), ({ err }) => {
-        if (err) {
-          console.error('saveUserSettings err:', err);
-        } else {
-          console.log('saveUserSettings saved');
-        }
-      });
+    const gun = getGun()!;
+
+    const profile = await gun
+      .get(`${GUN_PREFIX.id}:${user.id}/${GUN_PATH.profile}`)
+      // @ts-ignore
+      .then();
+
+    setPubProfile({
+      displayName: '',
+      location: '',
+      pronouns: '',
+      bio: '',
+      avatar: '',
+      ...expandDataKeys(profile),
+    });
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && isGetReady) {
+      getPrivProfile();
+      getPubProfile();
+    }
+  }, [isLoggedIn && isGetReady]);
+
+  const saveUserSettings = async (value: Partial<PrivateProfile>) => {
+    console.log('TODO');
   };
 
   const saveUserProfile = async (value: Partial<PublicProfile>) => {
-    await checkReAuthenticate();
+    const user = (await getUser())!;
+    const gun = getGun()!;
 
-    // TODO save to app profiles
-    getUser()
-      ?.get(`${user!.username}/${GUN_PATH.profile}`)
-      .put(prepareFormValues(value), ({ err }) => {
-        if (err) {
-          console.error('saveUserProfile user space err:', err);
-        } else {
-          console.log('saveUserProfile user space saved');
-        }
-      });
+    return new Promise((resolve, reject) => {
+      gun
+        .get(`${GUN_PREFIX.id}:${user.id}/${GUN_PATH.profile}`)
+        .put(prepareFormValues(value), ({ err }) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(value);
+          }
+        });
+    });
   };
 
   const toggleProfileVisibility = async (makeVisible: boolean) => {
-    await checkReAuthenticate();
+    const user = (await getUser())!;
+    const gun = getGun()!;
 
-    getUser()!
-      .get(`${user!.username}/${GUN_PATH.profile}`)
-      .get(GUN_KEY.isListed)
+    const profile = gun.get(`${GUN_PREFIX.id}:${user.id}/${GUN_PATH.profile}`);
+    const username = await profile
+      .get(GUN_KEY.username)
       // @ts-ignore
-      .put(makeVisible, console.log);
+      .then();
+    console.log('usrname:', username);
 
-    // TODO profiles list
+    return new Promise((resolve, reject) => {
+      gun
+        .get(`${GUN_PREFIX.app}:${GUN_PATH.profile}`)
+        .get(`${GUN_PREFIX.username}:${username}`)
+        .put(profile, ({ err }) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(expandDataKeys(profile));
+          }
+        });
+    });
   };
 
   return (
     <UserContext.Provider
       value={{
-        error,
-        user,
-        // @ts-ignore
         userSettings: privProfile,
-        // @ts-ignore
         userProfile: pubProfile,
-        vouches,
         saveUserSettings,
         saveUserProfile,
         toggleProfileVisibility,
-        isSettingsReady,
-        isProfileReady,
       }}
     >
       {children}

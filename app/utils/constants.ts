@@ -1,38 +1,30 @@
-// TODO same file as server/constants.js
 export const GUN_PREFIX = {
-  membersOnlyEncrypted: 'MOE__',
+  app: 'dev-A',
+  id: 'dev-I',
+  username: 'dev-U',
+  encryptedEmail: 'dev-E',
 };
 
 export const GUN_PATH = {
-  profile: 'P',
-  profiles: 'Ps',
-  vouches: 'Vs',
-  settings: 'Ss',
-  chatRoom: `${GUN_PREFIX.membersOnlyEncrypted}Cr`,
-  messages: 'Ms',
+  users: 'dev-Us',
+  vouches: 'dev-Vs',
+  vouchesPending: 'dev-VPs',
+  profiles: 'dev-Ps',
+  profile: 'dev-P',
 };
 
 export const GUN_KEY = {
   // user profiles
+  id: 'i',
   isListed: 'iL',
   displayName: 'dN',
   pronouns: 'pn',
   location: 'loc',
   bio: 'bi',
-  profilePhoto: 'pP',
-  profileMedia: 'pM',
+  avatar: 'pP',
   // user settings
-  contactEmail: 'cE',
-  // vouches
-  vouchType: 'vT',
-  timestamp: 't',
-  byUsername: 'bU',
-  // chat messages
-  messageText: 'mT',
+  username: 'uN',
 };
 
-export const GUN_VALUE = {
-  // vouches
-  vouched: 1,
-  unvouched: 0,
-};
+export const SESSION_CHANNEL_NAME = 'va_session-channel';
+export const SESSION_CHANNEL_KEY = 'va_session-shared';

@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { Header, Box, Button, Nav, Text } from 'grommet';
 
-import useUser from 'components/useUser';
+import useAuth from 'components/useAuth';
 import Logo from 'components/Logo';
 import { colors } from 'utils/theme';
 
 export default function NetworkAppBar() {
-  const { user } = useUser();
+  const { isLoggedIn } = useAuth();
 
   return (
     <Header justify="between" pad="small">
@@ -19,7 +19,7 @@ export default function NetworkAppBar() {
         </Box>
       </Link>
 
-      {user && (
+      {isLoggedIn && (
         <Nav direction="row" align="center">
           {/* <Link href="/network/we">The network</Link> */}
           <Link href="/network/me">Your profile</Link>

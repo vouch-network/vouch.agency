@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState, useEffect } from 'react';
 import {
   Box,
@@ -11,16 +10,27 @@ import {
   Layer,
 } from 'grommet';
 
+import type { PublicProfile } from 'utils/profiles';
+import type { Media } from 'utils/media';
 import Square from 'components/Square';
+import StatusMessage from 'components/StatusMessage';
 
-export default function RemotePhotoInput({ media, saveUserProfile }) {
-  const mediaUrl = media?.url;
+export default function RemotePhotoInput({
+  userDisplayName,
+  avatar,
+  saveUserProfile,
+}: {
+  userDisplayName?: string;
+  avatar?: string;
+  saveUserProfile: (value: Partial<PublicProfile>) => Promise<any>;
+}) {
+  const [mediaName, mediaUrl] = (avatar || '').split('|');
 
-  const [showForm, setShowForm] = useState();
+  const [showForm, setShowForm] = useState<boolean>();
   const [value, setValue] = useState({
     url: '',
   });
-  const [sucessMessage, setSuccessMessage] = useState('');
+  const [sucessMessage, setSuccessMessage] = useState<string>();
 
   useEffect(() => {
     if (!mediaUrl && showForm === undefined) {
@@ -28,14 +38,12 @@ export default function RemotePhotoInput({ media, saveUserProfile }) {
     }
   }, [mediaUrl]);
 
-  const handleSubmit = async ({ value }) => {
-    setSuccessMessage();
-
-    console.log(value);
+  const handleSubmit = async ({ value }: { value: Media }) => {
+    setSuccessMessage(undefined);
 
     try {
       await saveUserProfile({
-        profilePhoto: value,
+        avatar: `${userDisplayName || 'Vouch Member'}|${value.url}`,
       });
 
       setSuccessMessage('Saved photo');
@@ -48,13 +56,13 @@ export default function RemotePhotoInput({ media, saveUserProfile }) {
   return (
     <Box gap="xsmall" fill>
       {sucessMessage && (
-        <Box>
-          <Text color="status-ok">{sucessMessage}</Text>
-        </Box>
+        <StatusMessage status="ok" plain>
+          {sucessMessage}
+        </StatusMessage>
       )}
 
       <Square background="light-2">
-        {mediaUrl && <Image src={mediaUrl} fit="contain" />}
+        {mediaUrl && <Image src={mediaUrl} fit="contain" alt={mediaName} />}
       </Square>
 
       {!showForm && (

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-import withSessionRequired, { getUser, NextIronRequest } from 'lib/session';
+import { withAuthApiUser, getUser } from 'lib/auth';
 
 const API_URL = `https://api.forwardemail.net/v1/domains/${process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}/aliases`;
 
@@ -11,14 +11,14 @@ interface EmailAlias {
 }
 
 const getEmailAlias = async ({ username }: { username: string }) => {
-  const { data } = await axios.get(`${API_URL}?name=${username}`, {
+  const { data } = await axios.get(`${API_URL}/${username}`, {
     auth: {
       username: process.env.FORWARD_EMAIL_API_KEY!,
       password: '',
     },
   });
 
-  return { data: data[0] };
+  return { data };
 };
 
 const createEmailAlias = async ({
@@ -64,49 +64,30 @@ const updateEmailAlias = async ({
     }
   );
 
-const emailAliasHandler = async (
-  req: NextIronRequest,
-  res: NextApiResponse
-) => {
-  const { method, body } = req;
-  const { username } = getUser(req);
+const emailAliasHandler = async (req: NextApiRequest, res: NextApiResponse) => {
+  const { method, body, query } = req;
+  const { email } = getUser(req)!;
+  const username = body.username;
+
+  if (!username) {
+    res.status(400).json({
+      statusCode: 400,
+      message: 'Bad Request',
+    });
+
+    return;
+  }
 
   switch (method) {
-    case 'GET': {
-      try {
-        const { data } = await getEmailAlias({ username });
-
-        if (data) {
-          const respData: EmailAlias = {
-            sourceEmail: `${username}@${process.env.GANDI_DOMAIN_NAME}`,
-            destinationEmail: data.recipients[0],
-          };
-
-          res.status(200).send(respData);
-        } else {
-          res.status(404).send({});
-        }
-      } catch (err: any) {
-        console.debug(err.message);
-
-        res
-          .status(500)
-          .json({ statusCode: 500, message: 'Internal Server Error' });
-      }
-
-      break;
-    }
     case 'POST': {
-      const { destinationEmail } = body;
-
       try {
         const { data } = await createEmailAlias({
           username,
-          destinationEmail,
+          destinationEmail: email,
         });
 
         const respData: EmailAlias = {
-          sourceEmail: `${username}@${process.env.GANDI_DOMAIN_NAME}`,
+          sourceEmail: `${username}@${process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}`,
           destinationEmail: data.recipients[0],
         };
 
@@ -123,9 +104,9 @@ const emailAliasHandler = async (
     case 'PUT': {
       const { destinationEmail, createOnNotFound } = body;
 
-      const { data } = await getEmailAlias({ username });
-
       try {
+        const { data } = await getEmailAlias({ username });
+
         if (createOnNotFound && !data) {
           await createEmailAlias({
             username,
@@ -139,12 +120,12 @@ const emailAliasHandler = async (
         }
 
         const respData: EmailAlias = {
-          sourceEmail: `${username}@${process.env.GANDI_DOMAIN_NAME}`,
+          sourceEmail: `${username}@${process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}`,
           destinationEmail,
         };
 
         res.status(201).send({
-          sourceEmail: `${username}@${process.env.GANDI_DOMAIN_NAME}`,
+          sourceEmail: `${username}@${process.env.NEXT_PUBLIC_FORWARD_EMAIL_DOMAIN}`,
           destinationEmail,
         });
       } catch (err: any) {
@@ -164,4 +145,4 @@ const emailAliasHandler = async (
   }
 };
 
-export default withSessionRequired(emailAliasHandler);
+export default withAuthApiUser(emailAliasHandler);

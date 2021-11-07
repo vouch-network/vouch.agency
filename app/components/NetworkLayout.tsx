@@ -1,13 +1,18 @@
-import PropTypes from 'prop-types';
+import { ReactNode } from 'react';
 import Head from 'next/head';
-import { Box, Main } from 'grommet';
+import { Box } from 'grommet';
 
 import NetworkAppBar from 'components/NetworkAppBar';
 import NetworkFooter from 'components/NetworkFooter';
 
-export default function NetworkLayout({ centerHorizontally, children }) {
-  const mainProps = {};
-  const wrapperProps = {};
+type Props = {
+  children: ReactNode;
+  centerHorizontally?: boolean;
+};
+
+export default function NetworkLayout({ centerHorizontally, children }: Props) {
+  const mainProps: any = {};
+  const wrapperProps: any = {};
 
   if (centerHorizontally) {
     mainProps.fill = true;
@@ -20,10 +25,7 @@ export default function NetworkLayout({ centerHorizontally, children }) {
   return (
     <>
       <Head>
-        <title>
-          VOUCH AGENCY | "decentralized" casting, creative network run by its
-          members
-        </title>
+        <title>VOUCH AGENCY Creative Network</title>
         <link
           href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=fallback"
           rel="stylesheet"
@@ -31,20 +33,15 @@ export default function NetworkLayout({ centerHorizontally, children }) {
       </Head>
       <Box as="main" {...mainProps}>
         <NetworkAppBar />
+
         <Box {...wrapperProps}>
           <Box pad="small" align="center" {...wrapperProps}>
             {children}
           </Box>
-          <Box background="black">
-            <NetworkFooter />
-          </Box>
+
+          <NetworkFooter />
         </Box>
       </Box>
     </>
   );
 }
-
-NetworkLayout.propTypes = {
-  centerHorizontally: PropTypes.bool,
-  children: PropTypes.node.isRequired,
-};

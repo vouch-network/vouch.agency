@@ -1,267 +1,206 @@
-import axios from 'axios';
+import axios, { CancelTokenSource } from 'axios';
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/router';
-import niceware from 'niceware';
 
-import useGun from 'components/useGun';
-import { GUN_PATH, GUN_KEY, GUN_VALUE } from 'utils/constants';
+import useAuth from 'components/useAuth';
 
-// states:
-//  [empty] -> usernameAvailable
-//  [empty] -> usernameTaken
-//  usernameTaken -> usernameAvailable
-//   usernameAvailable -> userCreated
-//   usernameAvailable -> userCreateFailed
-//   userCreateFailed -> userCreated
-//    userCreated -> userAuthed
-//    userCreated -> userAuthFailed
-//    userAuthFailed -> userAuthed
-//     userAuthed -> gotCreds
-//     userAuthed -> getCredsFailed
-//     getCredsFailed -> gotCreds
-//     gotCreds -> userVouched
-const STATE = {
-  empty: '[empty]',
-  usernameAvailable: 'usernameAvailable',
-  usernameTaken: 'usernameTaken',
-  userCreateFailed: 'userCreateFailed',
-  userCreated: 'userCreated',
-  userAuthFailed: 'userAuthFailed',
-  userAuthed: 'userAuthed',
-  gotCreds: 'gotCreds',
-  getCredsFailed: 'getCredsFailed',
-  userVouched: 'userVouched',
+type FormValue = {
+  username: string;
+  email: string;
 };
+
+interface UseSignUp {
+  value: FormValue;
+  onChange: (nextValue: FormValue) => void;
+  onUsernameBlur: () => void;
+  handleSubmit: () => Promise<void>;
+  sendSignupEmail: () => Promise<void>;
+  usernameError: string | undefined;
+  signUpError: string | undefined;
+  isCheckingUsername: boolean;
+  isSubmitting: boolean;
+}
+
 export default function useSignUp({
-  invitedByUsername,
-  onDone: onDoneCallback,
+  invitedById,
+  signupToken,
 }: {
-  invitedByUsername: string;
-  onDone?: Function;
-}) {
-  const router = useRouter();
-  const {
-    getGun,
-    getUser,
-    setCertificate,
-    getCertificate,
-    setAccessToken,
-    logout,
-  } = useGun();
-  const userPubKeyRef = useRef<string>();
-  const joinStateRef = useRef<string>(STATE.empty);
-  const [value, setValue] = useState<any>({
+  invitedById?: string;
+  signupToken?: string;
+} = {}): UseSignUp {
+  const { login, getAuthHeader } = useAuth();
+  const verifiedUsernameRef = useRef<FormValue['username'] | null>();
+  const checkUsernameCancelTokenRef = useRef<CancelTokenSource>();
+  const [value, setValue] = useState<FormValue>({
     username: '',
-    invitedBy: invitedByUsername || 'admin',
+    email: '',
   });
 
-  const [generatedPassphrase, setGeneratedPassphrase] = useState<string>('');
-  const [downloadHref, setDownloadHref] = useState<string>();
+  const [usernameError, setUsernameError] = useState<string>();
   const [signUpError, setSignUpError] = useState<string>();
-  const [isSubmitting, setIsSubmitting] = useState<boolean>();
+  const [isCheckingUsername, setIsCheckingUsername] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  useEffect(() => {
-    const passphrase = niceware.generatePassphrase(10).join(' ');
-    const file = new Blob([passphrase], { type: 'text/plain' });
+  const checkUsername = async () => {
+    verifiedUsernameRef.current = null;
 
-    setGeneratedPassphrase(passphrase);
-    setDownloadHref(window.URL.createObjectURL(file));
-  }, []);
+    setUsernameError('');
+    setIsCheckingUsername(true);
 
-  const onDone = async () => {
-    // start session on server
-    await axios.post('/api/auth/login', {
-      username: value.username,
-      pub: userPubKeyRef.current,
-    });
-
-    if (onDoneCallback) {
-      onDoneCallback();
-    } else {
-      router.push('/network/me');
-    }
-  };
-
-  const checkUsername = (onSuccess?: any, onFailure?: any) => {
-    setSignUpError('');
-
-    if (value.username.startsWith('admin')) {
-      joinStateRef.current = STATE.usernameTaken;
-
-      setSignUpError('That username is not available, try another');
-
-      return;
-    }
-
-    // TODO look up from back up user database
-    getGun()!
-      .get(`~@${value.username}`)
-      .once((data) => {
-        if (data) {
-          if (data.err) console.error(data.err);
-
-          joinStateRef.current = STATE.usernameTaken;
-
-          setSignUpError('That username is not available, try another');
-
-          if (onFailure) onFailure();
-        } else {
-          joinStateRef.current = STATE.usernameAvailable;
-
-          if (onSuccess) {
-            onSuccess();
-          } else {
-            createUser();
-          }
-        }
-      });
-  };
-
-  const createUser = () => {
-    getGun()!
-      .user()
-      .create(value.username, generatedPassphrase, ({ err, pub }: any) => {
-        if (err) {
-          console.error(err);
-
-          joinStateRef.current = STATE.userCreateFailed;
-
-          setSignUpError('Something went wrong, try again');
-        } else {
-          userPubKeyRef.current = pub;
-          joinStateRef.current = STATE.userCreated;
-
-          authUser();
-        }
-      });
-  };
-
-  const authUser = () => {
-    getGun()!
-      .user()
-      .auth(value.username, generatedPassphrase, ({ err }: any) => {
-        if (err) {
-          console.error(err);
-
-          joinStateRef.current = STATE.userAuthFailed;
-          setSignUpError('Something went wrong, try again');
-        } else {
-          joinStateRef.current = STATE.userAuthed;
-          getCreds();
-        }
-      });
-  };
-
-  const getCreds = async () => {
-    try {
-      const [certData, tokenData] = await Promise.all([
-        axios
-          .post(`/api/network/certificates`, {
-            username: value.username,
-            pub: userPubKeyRef.current,
-          })
-          .then(({ data }) => data),
-        axios
-          .post(`/api/network/tokens`, {
-            username: value.username,
-            pub: userPubKeyRef.current,
-          })
-          .then(({ data }) => data),
-      ]);
-
-      // TODO handle expires at
-      // console.log(certData);
-      setCertificate(certData.certificate);
-      setAccessToken(tokenData.accessToken);
-
-      joinStateRef.current = STATE.gotCreds;
-      vouchUser();
-    } catch (err) {
-      console.error(err);
-
-      setSignUpError('Something went wrong, try again');
-    }
-  };
-
-  const vouchUser = () => {
-    const certOpts = {
-      opt: {
-        cert: getCertificate(),
-      },
+    const handleFailure = () => {
+      setUsernameError('That username is not available, try something else.');
     };
 
-    // TODO FIXME can't save to app space?
-    // getGun()
-    //   .get(`~${NEXT_PUBLIC_GUN_APP_PUBLIC_KEY}`)
-    getUser()!
-      .get(GUN_PATH.vouches)
-      // .get(userPubKeyRef.current)
-      .set(
+    if (checkUsernameCancelTokenRef.current) {
+      checkUsernameCancelTokenRef.current.cancel();
+    }
+
+    checkUsernameCancelTokenRef.current = axios.CancelToken.source();
+
+    try {
+      const { data } = await axios.get(
+        `/api/agency/profiles/${value.username}`,
         {
-          [value.username]: {
-            [GUN_KEY.timestamp]: Date.now(),
-            [GUN_KEY.vouchType]: GUN_VALUE.vouched,
-            [GUN_KEY.byUsername]: value.invitedBy,
-          },
-        },
-        ({ err }) => {
-          if (err) {
-            console.error(err);
-          }
-
-          joinStateRef.current = STATE.userVouched;
-
-          // finish regardless of failure
-          onDone();
+          cancelToken: checkUsernameCancelTokenRef.current.token,
         }
       );
+
+      if (data.profile) {
+        handleFailure();
+      } else {
+        verifiedUsernameRef.current = value.username;
+      }
+    } catch (err) {
+      if (!axios.isCancel(err)) {
+        console.error(err);
+
+        handleFailure();
+      }
+    }
+
+    setIsCheckingUsername(false);
   };
 
-  const handleSubmit = async () => {
-    console.debug(joinStateRef.current);
-
+  const sendSignupEmail = async () => {
     setIsSubmitting(true);
     setSignUpError('');
 
-    switch (joinStateRef.current) {
-      case STATE.empty:
-      case STATE.usernameTaken:
-        await logout();
-        checkUsername();
-        break;
-      case STATE.usernameAvailable:
-      case STATE.userCreateFailed:
-        await logout();
-        createUser();
-        break;
-      case STATE.userCreated:
-      case STATE.userAuthFailed:
-        await logout();
-        authUser();
-        break;
-      case STATE.userAuthed:
-      case STATE.getCredsFailed:
-        getCreds();
-        break;
-      case STATE.gotCreds:
-        vouchUser();
-        break;
-      case STATE.userVouched:
-        onDone();
-        break;
-      default:
-        break;
+    try {
+      login(
+        { email: value.email },
+        {
+          username: value.username,
+          isNewUser: true,
+          signupToken,
+        }
+      );
+
+      setIsSubmitting(false);
+    } catch (err) {
+      console.error(err);
+
+      setIsSubmitting(false);
+
+      setSignUpError("Couldn't get you signed up. Try signing up again.");
+    }
+  };
+
+  const handleSubmit: UseSignUp['handleSubmit'] = async () => {
+    setIsSubmitting(true);
+    setSignUpError('');
+
+    try {
+      if (!verifiedUsernameRef.current) {
+        await checkUsername();
+      }
+
+      if (verifiedUsernameRef.current === value.username) {
+        await axios.post(
+          '/api/network/emails/alias',
+          {
+            username: verifiedUsernameRef.current,
+          },
+          {
+            headers: await getAuthHeader(),
+          }
+        );
+      } else {
+        setUsernameError('That username is not available, try something else.');
+      }
+    } catch {}
+
+    setIsSubmitting(false);
+  };
+
+  const onChange = ({ username, ...otherValues }: FormValue) => {
+    if (username) {
+      // replace spaces
+      const formattedUsername = username.replace(/\s/g, '-');
+
+      if (/^[\w.-]+$/gi.test(formattedUsername)) {
+        if (/^[a-z]/i.test(formattedUsername)) {
+          const specialChars = ['-', '_', '.'];
+
+          const hasConsecutiveError = specialChars.some((x) => {
+            if (username.includes(x)) {
+              return specialChars.some((y) => {
+                if (username.includes(`${x}${y}`)) {
+                  return true;
+                }
+
+                return false;
+              });
+            }
+
+            return false;
+          });
+
+          if (hasConsecutiveError) {
+            setUsernameError(
+              `You can't use consecutive hyphens, underscores or periods.`
+            );
+          }
+        } else {
+          setUsernameError(`Your username must start with a letter.`);
+        }
+      } else {
+        setUsernameError(
+          `Your username can only contain letters (a-z), numbers (0-9), hyphens (-), underscores (_) and periods (.)`
+        );
+      }
+
+      setValue({ username: formattedUsername, ...otherValues });
+    } else {
+      setValue({ username, ...otherValues });
+    }
+  };
+
+  const onUsernameBlur = () => {
+    const { username } = value;
+
+    if (username) {
+      if (/[a-z0-9]$/i.test(username)) {
+        if (/\badmin|vouch|help|support|info\b/.test(username)) {
+          setUsernameError('1 t available, try something else.');
+        } else {
+          checkUsername();
+        }
+      } else {
+        setUsernameError(`Your username must end with a letter or number.`);
+      }
+    } else {
+      setUsernameError(`A username is required.`);
     }
   };
 
   return {
     value,
-    setValue,
+    onChange,
+    onUsernameBlur,
     handleSubmit,
-    checkUsername,
-    generatedPassphrase,
-    downloadHref,
+    sendSignupEmail,
+    usernameError,
     signUpError,
+    isCheckingUsername,
     isSubmitting,
   };
 }

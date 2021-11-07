@@ -10,11 +10,10 @@ import {
   TextArea,
 } from 'grommet';
 
-import { withGunAuthGate } from 'components/GunAuthGate';
 import useUser from 'components/useUser';
 import NetworkLayout from 'components/NetworkLayout';
-import LoggedInLayout from 'components/LoggedInLayout';
 import UserLayout from 'components/UserLayout';
+import StatusMessage from 'components/StatusMessage';
 // import ProfilePhotoUpload from 'components/me/ProfilePhotoUpload';
 import RemotePhotoInput from 'components/RemotePhotoInput';
 
@@ -50,9 +49,9 @@ function PublicProfileForm({ userProfile, saveUserProfile }) {
     <Form value={value} onChange={handleChange} onSubmit={handleSubmit}>
       <Box gap="medium">
         {sucessMessage && (
-          <Box>
-            <Text color="status-ok">{sucessMessage}</Text>
-          </Box>
+          <StatusMessage status="ok" plain>
+            {sucessMessage}
+          </StatusMessage>
         )}
 
         <Box width="medium" gap="xsmall">
@@ -110,7 +109,7 @@ function PublicProfileForm({ userProfile, saveUserProfile }) {
   );
 }
 
-export default function Me() {
+function Me() {
   const { userProfile, saveUserProfile } = useUser();
 
   return (
@@ -119,32 +118,37 @@ export default function Me() {
         <Box pad={{ horizontal: 'medium' }} gap="small">
           <Text>Your profile picture</Text>
           <Box width="20rem" align="center">
-            <RemotePhotoInput
-              media={userProfile.profilePhoto}
-              saveUserProfile={saveUserProfile}
-            />
+            {userProfile && (
+              <RemotePhotoInput
+                userDisplayName={userProfile.displayName}
+                avatar={userProfile.avatar}
+                saveUserProfile={saveUserProfile}
+              />
+            )}
           </Box>
         </Box>
 
         <Box pad={{ horizontal: 'medium' }}>
-          <PublicProfileForm
-            userProfile={userProfile}
-            saveUserProfile={saveUserProfile}
-          />
+          {userProfile && (
+            <PublicProfileForm
+              userProfile={userProfile}
+              saveUserProfile={saveUserProfile}
+            />
+          )}
         </Box>
       </Box>
     </Box>
   );
 }
 
-export const getServerSideProps = withGunAuthGate();
-
 Me.getLayout = function getLayout(page) {
   return (
     <NetworkLayout>
-      <LoggedInLayout>
-        <UserLayout>{page}</UserLayout>
-      </LoggedInLayout>
+      <UserLayout>{page}</UserLayout>
     </NetworkLayout>
   );
 };
+
+Me.authRequired = true;
+
+export default Me;

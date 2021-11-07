@@ -15,13 +15,11 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import { Layer, Box, Text } from 'grommet';
 import type { IGunChainReference } from 'gun/types/chain';
-import type { IGunCryptoKeyPair } from 'gun/types/types';
 import Gun from 'gun/gun';
 
-import EnterPasswordForm from 'components/EnterPasswordForm';
-import type { GunUser } from 'utils/profiles';
+import useAuth from 'components/useAuth';
+import { GUN_KEY } from 'utils/constants';
 
 if (!process.env.NEXT_PUBLIC_GUN_PEERS) {
   throw new Error('NEXT_PUBLIC_GUN_PEERS in env environment required');
@@ -31,55 +29,60 @@ const NEXT_PUBLIC_GUN_PEERS = process.env.NEXT_PUBLIC_GUN_PEERS.split(',');
 
 interface Props {
   children: React.ReactNode;
-  sessionUser?: GunUser;
 }
 
 interface ContextValue {
   getGun: () => IGunChainReference | undefined;
-  getUser: () => IGunChainReference | undefined;
-  getCertificate: () => string | undefined;
-  setCertificate: (cert: string) => void;
   getAccessToken: () => string | undefined;
   setAccessToken: (token: string) => void;
-  login: (value: any) => Promise<any>;
-  logout: () => void;
-  triggerReauthentication: (username: string) => Promise<void>;
-  isReady: boolean;
-  isAuthenticated: boolean;
-  needsReauthentication: string | undefined;
+  isGetReady: boolean;
+  isPutReady: boolean;
 }
 
 // TODO memo
 const GunContext = createContext<ContextValue>({
   getGun: () => undefined,
-  getUser: () => undefined,
-  getCertificate: () => undefined,
-  setCertificate: () => {},
   getAccessToken: () => undefined,
   setAccessToken: () => {},
-  login: () => Promise.resolve(),
-  logout: () => {},
-  triggerReauthentication: () => Promise.resolve(),
-  isReady: false,
-  isAuthenticated: false,
-  needsReauthentication: undefined,
+  isGetReady: false,
+  isPutReady: false,
 });
 
-export const GunProvider = ({ children, sessionUser }: Props) => {
+export const GunProvider = ({ children }: Props) => {
+  const { isLoggedIn, logout, getAuthHeader } = useAuth();
   const gunRef = useRef<IGunChainReference>();
-  const userRef = useRef<IGunChainReference>();
-  const certificateRef = useRef<string>();
   const accessTokenRef = useRef<string>();
-  const reauthenticationPromiseRef = useRef<{
-    resolve: (value: any | PromiseLike<any>) => void;
-    reject: (value: any | PromiseLike<any>) => void;
-  }>();
   const credsRequestCancelTokenRef = useRef<CancelTokenSource>();
-  const [isReady, setIsReady] = useState<boolean>(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [needsReauthentication, setNeedsReauthentication] =
-    // string: username
-    useState<string>();
+  const [isGetReady, setIsGetReady] = useState<boolean>(false);
+  const [isPutReady, setIsPutReady] = useState<boolean>(false);
+
+  const getToken = async () => {
+    if (!gunRef.current || !isLoggedIn) {
+      return;
+    }
+
+    credsRequestCancelTokenRef.current = axios.CancelToken.source();
+
+    // get new token
+    try {
+      const { data } = await axios.post(
+        `/api/network/tokens`,
+        {},
+        {
+          headers: await getAuthHeader(),
+          cancelToken: credsRequestCancelTokenRef.current.token,
+        }
+      );
+
+      // store token in app memory
+      accessTokenRef.current = data.accessToken;
+    } catch (err: any) {
+      // TODO standardize unauthenticated requests
+      if (err.response?.status === 401) {
+        logout();
+      }
+    }
+  };
 
   useEffect(() => {
     const initGun = async () => {
@@ -89,7 +92,7 @@ export const GunProvider = ({ children, sessionUser }: Props) => {
         import('gun/lib/rindexed'),
         import('gun/lib/store'),
         import('gun/lib/then'),
-        import('gun/sea'),
+        // import('gun/sea'),
       ]);
 
       if (!gunRef.current) {
@@ -108,6 +111,8 @@ export const GunProvider = ({ children, sessionUser }: Props) => {
 
             if (msg.err === 'Invalid access token') {
               // TODO handle invalid access token
+              getToken();
+
               console.error(msg.err);
             }
           });
@@ -121,73 +126,22 @@ export const GunProvider = ({ children, sessionUser }: Props) => {
           store: (window as any).RindexedDB({}),
         });
 
-        // create user
-        userRef.current = gunRef.current
-          .user()
-          .recall({ sessionStorage: true });
-
-        setIsReady(true);
+        setIsGetReady(true);
       }
-
-      // @ts-ignore TODO
-      gunRef.current.on('auth', async ({ root, sea, err }) => {
-        console.debug('gun user authed');
-
-        const user: GunUser = {
-          username: await new Promise((resolve) => {
-            gunRef.current
-              ?.get(`~${sea.pub}`)
-              .get('alias')
-              .once((v) => {
-                // @ts-ignore
-                resolve(v);
-              });
-          }),
-          pub: sea.pub,
-        };
-
-        if (!err) {
-          setIsAuthenticated(true);
-        }
-      });
     };
 
     initGun();
   }, []);
 
   useEffect(() => {
-    const getCreds = async () => {
-      credsRequestCancelTokenRef.current = axios.CancelToken.source();
+    const initToken = async () => {
+      await getToken();
 
-      // get new certificate and token
-      try {
-        await Promise.all([
-          axios
-            .post(`/api/network/tokens`, sessionUser, {
-              cancelToken: credsRequestCancelTokenRef.current.token,
-            })
-            .then(({ data }) => {
-              // store token in app memory
-              accessTokenRef.current = data.accessToken;
-            }),
-          axios
-            .post(`/api/network/certificates`, sessionUser, {
-              cancelToken: credsRequestCancelTokenRef.current.token,
-            })
-            .then(({ data }) => {
-              // store certificate in app memory
-              // TODO check if expiry isn't working or misconfigured
-              // TODO handle expired certificates
-              certificateRef.current = data.certificate;
-            }),
-        ]);
-      } catch (err) {
-        console.error(err);
-      }
+      setIsPutReady(true);
     };
 
-    if (sessionUser) {
-      getCreds();
+    if (isGetReady && isLoggedIn) {
+      initToken();
     }
 
     return () => {
@@ -195,131 +149,21 @@ export const GunProvider = ({ children, sessionUser }: Props) => {
         credsRequestCancelTokenRef.current.cancel();
       }
     };
-  }, [sessionUser]);
-
-  const login = async (value: {
-    username: string;
-    passphrase: string;
-    // rememberMe?: boolean;
-  }) => {
-    await logout();
-
-    // FIXME .auth callback sometimes works, sometimes doesn't.
-    // can't figure out why--maybe has to do with peers?
-    // maybe https://github.com/amark/gun/issues/944?
-    // Let .on('auth') callback do most of the work
-    return new Promise((resolve, reject) => {
-      gunRef
-        .current!.user()
-        .auth(value.username, value.passphrase, ({ err, sea }: any) => {
-          if (err) {
-            reject(new Error(err));
-          } else {
-            const user: GunUser = {
-              username: value.username,
-              pub: sea.pub,
-            };
-
-            resolve(user);
-          }
-        });
-    });
-  };
-
-  const logout = () => {
-    certificateRef.current = undefined;
-    accessTokenRef.current = undefined;
-
-    userRef.current?.leave();
-
-    setIsAuthenticated(false);
-
-    return axios.post('/api/auth/logout');
-  };
-
-  const triggerReauthentication = (username: string): Promise<void> => {
-    reauthenticationPromiseRef.current = undefined;
-
-    if (!username) {
-      return Promise.reject(new Error('Username required'));
-    }
-
-    setNeedsReauthentication(username);
-
-    return new Promise((resolve, reject) => {
-      reauthenticationPromiseRef.current = {
-        resolve: (arg) => {
-          setNeedsReauthentication(undefined);
-
-          reauthenticationPromiseRef.current = undefined;
-          resolve(arg);
-        },
-        reject: (arg) => {
-          reauthenticationPromiseRef.current = undefined;
-          reject(arg);
-        },
-      };
-    });
-  };
-
-  const handleSubmitPassphrase = ({ passphrase }: any) => {
-    if (needsReauthentication) {
-      userRef.current?.auth(
-        needsReauthentication,
-        passphrase,
-        ({ err, sea }: any) => {
-          if (err && reauthenticationPromiseRef.current?.reject) {
-            reauthenticationPromiseRef.current.reject(
-              new Error('Could not log inn')
-            );
-          } else {
-            if (reauthenticationPromiseRef.current?.resolve) {
-              reauthenticationPromiseRef.current.resolve({
-                username: needsReauthentication,
-                pub: sea.pub,
-              });
-            }
-          }
-        }
-      );
-    }
-  };
+  }, [isGetReady, isLoggedIn]);
 
   return (
     <GunContext.Provider
       value={{
         getGun: () => gunRef.current,
-        getUser: () => userRef.current,
-        getCertificate: () => certificateRef.current,
-        setCertificate: (v) => {
-          certificateRef.current = v;
-        },
         getAccessToken: () => accessTokenRef.current,
         setAccessToken: (v) => {
           accessTokenRef.current = v;
         },
-        isReady,
-        isAuthenticated,
-        needsReauthentication,
-        logout,
-        login,
-        triggerReauthentication,
+        isGetReady,
+        isPutReady,
       }}
     >
       {children}
-
-      {needsReauthentication && (
-        <Layer
-          onClickOutside={() => setNeedsReauthentication(undefined)}
-          onEsc={() => setNeedsReauthentication(undefined)}
-        >
-          <Box pad="medium" gap="small">
-            <Text>Re-enter your passphrase to continue</Text>
-
-            <EnterPasswordForm onSubmit={handleSubmitPassphrase} />
-          </Box>
-        </Layer>
-      )}
     </GunContext.Provider>
   );
 };

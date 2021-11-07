@@ -2,15 +2,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Footer, Box, Button, Nav, Text, Layer } from 'grommet';
 
-import useUser from 'components/useUser';
-import useGun from 'components/useGun';
-import Logo from 'components/Logo';
-import { colors } from 'utils/theme';
+import useAuth from 'components/useAuth';
 
 export default function NetworkAFooter() {
   const router = useRouter();
-  const { user } = useUser();
-  const { logout } = useGun();
+  const { isLoggedIn, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleClickLogOut = () => {
@@ -20,8 +16,8 @@ export default function NetworkAFooter() {
   };
 
   return (
-    <>
-      {user && (
+    <Box background="black">
+      {isLoggedIn && (
         <Footer justify="between" pad="small">
           <Button
             size="small"
@@ -62,6 +58,6 @@ export default function NetworkAFooter() {
           </Box>
         </Layer>
       )}
-    </>
+    </Box>
   );
 }
