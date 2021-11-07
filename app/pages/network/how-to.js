@@ -123,28 +123,8 @@ function HowTo() {
 
       <Box id="admin-help" as="section">
         <Text as="h2">
-          You can't change your email address without an admin.
-        </Text>
-        <Text as="p">
-          User authentication (e.g. signing in, sign ups) are currently handled
-          by a service called <Anchor href="https://auth0.com/">Auth0</Anchor>.
-          sua owns this account. They are actively looking for ways to
-          decentralize user authentication so that log ins are not managed by
-          one person (i.e. sua.)
-        </Text>
-        <Text as="p">
-          Text or email sua if you need to change your email address (remember,
-          your email address is only used to log in, and is not visible to
-          anyone else.)
-        </Text>
-        <Text as="p">
-          If you need to change your password, log out and try to log back in.
-          Instead of signing in, click "Forgot password."
-        </Text>
-        <Text as="p">
-          Your username cannot be changed because it's your unique identifier.
-          You'll need to request a new account to change your username, which
-          sua can help with.
+          You can't change your username or email address at the moment. The
+          feature is still in development.
         </Text>
       </Box>
     </Wrapper>
