@@ -4,12 +4,8 @@ import jwt from 'jsonwebtoken';
 import { withAuthApiUser, withAuthApi, getUser } from 'lib/auth';
 import { GUN_PREFIX, GUN_PATH, GUN_KEY } from 'utils/constants';
 
-if (!process.env.APP_ACCESS_TOKEN_SECRET) {
-  throw new Error('APP_ACCESS_TOKEN_SECRET in env environment required');
-}
-
-if (!process.env.APP_ENCRYPTION_SECRET) {
-  throw new Error('APP_ENCRYPTION_SECRET in env environment required');
+if (!process.env.APP_PRIVATE_KEY) {
+  throw new Error('APP_PRIVATE_KEY in env environment required');
 }
 
 // Create token to allow `.put` access to gunDB
@@ -37,8 +33,9 @@ const tokensHandler = (req: NextApiRequest, res: NextApiResponse) => {
       {
         permissions,
       },
-      process.env.APP_ACCESS_TOKEN_SECRET!,
+      process.env.APP_PRIVATE_KEY!,
       {
+        algorithm: 'RS256',
         expiresIn: '2h',
       }
     );
