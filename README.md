@@ -32,9 +32,16 @@ $ awk '{printf "%s\\n", $0}' .keys/local-public.pem | awk '{print "APP_PUBLIC_KE
 
 prod:
 
-vercel:
+vercel (app):
 
 ```bash
 $ cd app
 $ vercel env add APP_PRIVATE_KEY production < ../.keys/private.pem
+```
+
+flyctl (server):
+
+```bash
+$ cd server
+$ flyctl secrets set APP_PUBLIC_KEY="$(cat ../.keys/public.pem)"
 ```
