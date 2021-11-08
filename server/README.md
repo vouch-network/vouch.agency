@@ -9,10 +9,10 @@ This server is not necessary in order to run the Next.js app, but will enhance p
 Create .env file:
 
 ```bash
-$ cp .env.example .env
+$ cp .env.local.example .env.local
 ```
 
-Copy the `APP_TOKEN_SECRET` from '/app/.env.local` to the new server .env. Generate and copy to the app .env if this value doesn't exist yet.
+Follow instructions in the repo README to generate a public/private key pair and save the public key to the server env variables.
 
 Install and start the server:
 
@@ -30,6 +30,6 @@ $ yarn watch
 
 ## Deploy
 
-This server can be deployed anywhere (such as [fly](https://fly.io/)) and can exist in as many instances as needed.
+This server can be deployed anywhere (such as [fly](https://fly.io/)) and can exist in as many instances as needed, as long it has the app public key.
 
 Once deployed, the URLs of all relay peers should be set in Next.js app env variables as `NEXT_PUBLIC_GUN_PEERS`.
