@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
 import { getTokenFromHeader, isTokenValid, getUserByToken } from 'lib/auth';
-import type { AuthUser } from 'utils/auth';
+import type { AuthMetadata } from 'utils/auth';
 
 // Get user metadata from an identity token
 // Useful in the case when when we want to check token metadata
@@ -13,15 +13,12 @@ const identityMetadataHandler = async (
   const { method, headers } = req;
 
   if (method === 'GET') {
-    const data: {
-      authenticated: boolean;
-      user: AuthUser | null;
-    } = {
+    const data: AuthMetadata = {
       authenticated: false,
       user: null,
     };
 
-    const identityToken = getTokenFromHeader(req.headers);
+    const identityToken = getTokenFromHeader(headers);
 
     if (identityToken) {
       data.authenticated = isTokenValid(identityToken);

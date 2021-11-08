@@ -1,7 +1,7 @@
 import axios, { CancelTokenSource } from 'axios';
 import { useEffect, useState, useRef } from 'react';
 
-import useAuth from 'components/useAuth';
+import useAuth, { Login } from 'components/useAuth';
 import useApiToken from 'components/useApiToken';
 
 type FormValue = {
@@ -14,20 +14,14 @@ interface UseSignUp {
   onChange: (nextValue: FormValue) => void;
   onUsernameBlur: () => void;
   handleSubmit: () => Promise<void>;
-  sendSignupEmail: () => Promise<void>;
+  sendSignupEmail: () => Login;
   usernameError: string | undefined;
   signUpError: string | undefined;
   isCheckingUsername: boolean;
   isSubmitting: boolean;
 }
 
-export default function useSignUp({
-  invitedById,
-  signupToken,
-}: {
-  invitedById?: string;
-  signupToken?: string;
-} = {}): UseSignUp {
+export default function useSignUp(): UseSignUp {
   const { getTokenHeader } = useApiToken();
   const { login } = useAuth();
   const verifiedUsernameRef = useRef<FormValue['username'] | null>();
@@ -82,21 +76,21 @@ export default function useSignUp({
     setIsCheckingUsername(false);
   };
 
-  const sendSignupEmail = async () => {
+  const sendSignupEmail: UseSignUp['sendSignupEmail'] = async () => {
     setIsSubmitting(true);
     setSignUpError('');
 
     try {
-      login(
+      const data = await login(
         { email: value.email },
         {
-          username: value.username,
           isNewUser: true,
-          signupToken,
         }
       );
 
       setIsSubmitting(false);
+
+      return data;
     } catch (err) {
       console.error(err);
 
@@ -122,7 +116,7 @@ export default function useSignUp({
             username: verifiedUsernameRef.current,
           },
           {
-            headers: await getTokenHeader(),
+            headers: getTokenHeader(),
           }
         );
       } else {

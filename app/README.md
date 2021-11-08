@@ -123,6 +123,9 @@ const graph = {
   'id:id_3/profile': {
     displayName: 'Celine',
   },
+  'email:encrypted_email_1': {
+    displayName: 'Celine',
+  },
 };
 
 const userId = auth.issuer;
@@ -174,16 +177,23 @@ const vouch = gun
 
 gun.get(`id:${receiverId}/vouches`).put(vouch);
 
-// TODO invite user
+// invite user
 const timestamp = Date.now();
-const vouch = gun
-  .get('app:vouches/pending')
-  .get(`id:${currentUserId}`)
-  // .get(`username:${currentUserUsername}`)
+const invite = gun.get('app:invites')
+  .get(`email:${receiverEmail}`)
   .put({
-    [`${inviteCode}`]: `${timestamp}`,
+    invitedBy: `id:${currentUserId}`,
+    timestamp: timestamp
   });
 
+gun.get(`id:${currentUserId}/invites`).put(invite)
+
+// accept invite
+const user = gun.get(`id:${userId}`)
+gun.get('app:invites')
+  .get(`email:${userEmail}`)
+  .get('user')
+  .put(user);
 ```
 
 ```ts
@@ -199,13 +209,27 @@ gun:
 
 ```ts
 const newUserId = 'new_user_id';
+const newUserEmail = 'new_user_email';
 const newUserUsername = 'new_user';
 const gun = getGun()!;
 
+// turn invite into vouch
+const invite = gun.get('app:vouches/pending').get(`email:${receiverEmail}`);
+const vouch = gun
+  .get('app:vouches')
+  .get(`id:${newUserId}`)
+  .put({
+    [invite.timestamp]: `${invitedBy}|${VouchType.Vouched}`,
+  });
+
+gun.get(`id:${newUserId}/vouches`).put(vouch);
+
+// update username
 gun
   .get(`${GUN_PREFIX.id}:${newUserId}`)
   .put({ [GUN_KEY.username]: newUserUsername });
 
+// create profile
 const profile = gun
   .get(`${GUN_PREFIX.id}:${newUserId}/${GUN_PATH.profile}`)
   .put({ [GUN_KEY.displayName]: 'New User' });

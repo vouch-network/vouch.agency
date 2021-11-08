@@ -3,7 +3,8 @@ import type { NextApiRequest, NextApiResponse, NextApiHandler } from 'next';
 import { Magic } from '@magic-sdk/admin';
 
 import type { AuthUser, AuthSession } from 'utils/auth';
-import { identity } from 'lodash';
+import { encrypt } from 'lib/crypto';
+import { encode } from 'utils/base64';
 
 class AuthAdminService {
   private static _client: Magic;
@@ -56,10 +57,11 @@ export async function getUserByToken(identityToken: string): Promise<AuthUser> {
     identityToken
   );
   // const id = getIssuerFromToken(identityToken);
+  const encEmail = encrypt(metadata.email as string);
 
   return {
     id: metadata.issuer as string,
-    email: metadata.email as string,
+    email: encode(encEmail),
   };
 }
 
@@ -99,6 +101,8 @@ export function withAuthApi(handler: NextApiHandler) {
   };
 }
 
+// API middleware for adding current user to the request
+// Retrieve with `getUser`
 export function withAuthApiUser(handler: NextApiHandler) {
   return withAuthApi(async function handlerWithAuthUser(
     req: NextApiRequest,

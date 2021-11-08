@@ -8,11 +8,7 @@ import useGun from 'components/useGun';
 import type { AuthUser, CallbackParams } from 'utils/auth';
 import { decode } from 'utils/base64';
 
-type Props = {
-  username: string;
-};
-
-export default function AuthCallback({ username }: Props) {
+export default function AuthCallback() {
   const router = useRouter();
   const { isReady: isAuthReady, loginCallback } = useAuth();
 
@@ -21,7 +17,7 @@ export default function AuthCallback({ username }: Props) {
 
   const finishLogin = async () => {
     try {
-      const user = await loginCallback({ username });
+      const user = await loginCallback();
 
       if (user) {
         router.replace(redirectTo);
@@ -61,21 +57,15 @@ AuthCallback.getLayout = function getLayout(page: any) {
 // Check hash for some additional information, e.g. to differentiate
 // between sign ups and log ins
 export async function getServerSideProps(context: any) {
-  const { params, query } = context;
+  const { query } = context;
 
-  const callbackParams = decode(params.callbackHash) as CallbackParams;
-
-  if (!callbackParams.username || !query.magic_credential) {
+  if (!query.magic_credential) {
     return {
       notFound: true,
     };
   }
 
-  const props: Props = {
-    username: callbackParams.username,
-  };
-
   return {
-    props,
+    props: {},
   };
 }

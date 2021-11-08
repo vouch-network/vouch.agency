@@ -8,9 +8,8 @@ import useAuth from 'components/useAuth';
 import useGun from 'components/useGun';
 import NetworkLayout from 'components/NetworkLayout';
 import UserLayout from 'components/UserLayout';
-import { expandDataKeys } from 'utils/gunDB';
+import { expandDataKeys, app, id, path, GUN_PATH } from 'utils/gunDB';
 import { VouchType, Vouch } from 'utils/vouches';
-import { GUN_PREFIX, GUN_PATH, GUN_KEY } from 'utils/constants';
 
 // TODO better loading indicator
 const Loading = () => (
@@ -21,7 +20,7 @@ const Loading = () => (
 
 function UserVouches() {
   const { getUser } = useAuth();
-  const { getGun, isGunReady } = useGun();
+  const { getGun, isReady: isGunReady } = useGun();
   const [receivedVouches, setReceivedVouches] = useState<Vouch[]>();
   const [givenVouches, setGivenVouches] = useState<Vouch[]>();
 
@@ -31,7 +30,7 @@ function UserVouches() {
 
     // Vouches received:
     gun
-      .get(`${GUN_PREFIX.id}:${user.id}/${GUN_PATH.vouches}`)
+      .get(path(id(user.id), GUN_PATH.vouches))
       .map()
       .once((data: any, giverIdentifier: string) => {
         const vouches: Vouch[] = [];
@@ -54,8 +53,8 @@ function UserVouches() {
 
     // Vouches given:
     gun
-      .get(`${GUN_PREFIX.app}:${GUN_PATH.vouches}`)
-      .get(`${GUN_PREFIX.id}:${user.id}}`)
+      .get(app(GUN_PATH.vouches))
+      .get(id(user.id))
       .once((data) => {
         if (!data) {
           setGivenVouches([]);

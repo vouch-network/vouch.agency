@@ -20,8 +20,7 @@ import useGun from 'components/useGun';
 import NetworkLayout from 'components/NetworkLayout';
 import { expandDataKeys } from 'utils/gunDB';
 import { VouchType, Vouch } from 'utils/vouches';
-import { GUN_PATH, GUN_KEY, GUN_PREFIX } from 'utils/constants';
-import { ImportsNotUsedAsValues } from 'typescript';
+import { path, id, GUN_PATH, GUN_KEY } from 'utils/gunDB';
 import router from 'next/router';
 
 function UsernameForm({ onSuccess }: any) {
@@ -132,7 +131,7 @@ type State = typeof STATE[keyof typeof STATE];
 
 function Setup() {
   const { isReady: isAuthReady, getUser } = useAuth();
-  const { isGunReady, getGun } = useGun();
+  const { isReady: isGunReady, getGun } = useGun();
   const [signUpState, setSignUpState] = useState<State>(STATE.empty);
 
   const isFinishedFlow = signUpState === STATE.savedProfile;
@@ -142,7 +141,7 @@ function Setup() {
     const gun = getGun()!;
 
     gun
-      .get(`${GUN_PREFIX.id}:${user.id}`)
+      .get(id(user.id))
       .get(GUN_KEY.username)
       // @ts-ignore
       .put(username, ({ err }) => {
@@ -160,7 +159,7 @@ function Setup() {
     const gun = getGun()!;
 
     gun
-      .get(`${GUN_PREFIX.id}:${user.id}/${GUN_PATH.profile}`)
+      .get(path(id(user.id), GUN_PATH.profile))
       .get(GUN_KEY.displayName)
       // @ts-ignore
       .put(value, ({ err }) => {
@@ -179,14 +178,14 @@ function Setup() {
 
     // Check if user is already in DB
     const gunUser = await gun
-      .get(`${GUN_PREFIX.id}:${user.id}`)
+      .get(id(user.id))
       // @ts-ignore
       .then();
 
     if (gunUser) {
       // Check if profile is already in DB
       const gunProfile = await gun
-        .get(`${GUN_PREFIX.id}:${user.id}/${GUN_PATH.profile}`)
+        .get(path(id(user.id), GUN_PATH.profile))
         // @ts-ignore
         .then();
 

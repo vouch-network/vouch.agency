@@ -32,66 +32,38 @@ interface Props {
 
 interface ContextValue {
   getGun: () => IGunChainReference | undefined;
-  isGunReady: boolean;
+  isReady: boolean;
+  isPutReady: boolean;
 }
 
-// TODO memo
 const GunContext = createContext<ContextValue>({
   getGun: () => undefined,
-  isGunReady: false,
+  isReady: false,
+  isPutReady: false,
 });
 
+// state:
+// [empty] -> ready
+//  ready -> gotAccessToken
+//  ready -> getAccessTokenFailed
+//  getAccessTokenFailed -> gotAccessToken
+//   gotAccessToken -> ready
+const STATE = {
+  empty: '[empty]',
+  ready: 'ready',
+  gotAccessToken: 'gotAccessToken',
+  getAccessTokenFailed: 'getAccessTokenFailed',
+} as const;
+type State = typeof STATE[keyof typeof STATE];
+
 export const GunProvider = ({ children }: Props) => {
-  const { getTokenHeader } = useApiToken();
+  const { apiToken, getTokenHeader } = useApiToken();
   const gunRef = useRef<IGunChainReference>();
   const accessTokenRef = useRef<string>();
-  const accessTokenRequestRef = useRef<any>();
   const accessTokenRequestCancelTokenRef = useRef<CancelTokenSource>();
-  const [isGunReady, setIsGetReady] = useState<boolean>(false);
-
-  const getNewAccessToken = async () => {
-    const apiTokenHeader = await getTokenHeader();
-
-    if (!apiTokenHeader) {
-      // TODO handle
-      return;
-    }
-
-    accessTokenRequestCancelTokenRef.current = axios.CancelToken.source();
-
-    // get new token
-    try {
-      const { data } = await axios.get(`/api/network/token`, {
-        headers: apiTokenHeader,
-        cancelToken: accessTokenRequestCancelTokenRef.current.token,
-      });
-
-      // store token in app memory
-      accessTokenRef.current = data.accessToken;
-
-      return accessTokenRef.current;
-    } catch (err: any) {
-      console.error(err);
-
-      if (err.response?.status === 401) {
-        // TODO handle global error
-      }
-    }
-  };
-
-  const getAccessToken = async () => {
-    if (accessTokenRef.current) {
-      return accessTokenRef.current;
-    }
-
-    if (accessTokenRequestRef.current) {
-      return await accessTokenRequestRef.current;
-    }
-
-    accessTokenRequestRef.current = getNewAccessToken();
-
-    return await accessTokenRequestRef.current;
-  };
+  const [gunState, setGunState] = useState<State>(STATE.empty);
+  const isReady = gunState === STATE.ready;
+  const isAuthenticated = gunState === STATE.gotAccessToken;
 
   useEffect(() => {
     const initGun = async () => {
@@ -115,7 +87,7 @@ export const GunProvider = ({ children }: Props) => {
             // Adds headers for put
             if (msg.put) {
               msg.headers = {
-                accessToken: await getAccessToken(),
+                accessToken: accessTokenRef.current,
               };
             }
 
@@ -147,24 +119,66 @@ export const GunProvider = ({ children }: Props) => {
           store: (window as any).RindexedDB({}),
         });
 
-        setIsGetReady(true);
+        setGunState(STATE.ready);
       }
     };
 
     initGun();
+  }, []);
+
+  const getNewAccessToken = async () => {
+    const apiTokenHeader = getTokenHeader();
+
+    accessTokenRequestCancelTokenRef.current = axios.CancelToken.source();
+
+    // Get new access token
+    // Note, this doesn't necessarily mean that the user is authenticated yet.
+    // We may get a token before the user finishes log in with `loginCallback`.
+    try {
+      const { data } = await axios.get(`/api/network/token`, {
+        headers: apiTokenHeader,
+        cancelToken: accessTokenRequestCancelTokenRef.current.token,
+      });
+
+      // store token in app memory
+      accessTokenRef.current = data.accessToken;
+
+      setGunState(STATE.gotAccessToken);
+
+      return accessTokenRef.current;
+    } catch (err: any) {
+      console.error(err);
+
+      setGunState(STATE.getAccessTokenFailed);
+
+      if (err.response?.status === 401) {
+        // TODO handle global error
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (apiToken) {
+      getNewAccessToken();
+    } else {
+      accessTokenRef.current = undefined;
+
+      setGunState(STATE.ready);
+    }
 
     return () => {
       if (accessTokenRequestCancelTokenRef.current?.cancel) {
         accessTokenRequestCancelTokenRef.current.cancel();
       }
     };
-  }, []);
+  }, [apiToken]);
 
   return (
     <GunContext.Provider
       value={{
         getGun: () => gunRef.current,
-        isGunReady,
+        isReady,
+        isPutReady: isAuthenticated,
       }}
     >
       {children}

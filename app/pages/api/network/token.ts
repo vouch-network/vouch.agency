@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 
 import { withAuthApiUser, getUser } from 'lib/auth';
-import { GUN_PREFIX, GUN_PATH, GUN_KEY } from 'utils/constants';
+import { id, email } from 'utils/gunDB';
 
 const APP_PRIVATE_KEY = process.env.APP_PRIVATE_KEY?.trim();
 
@@ -15,22 +15,18 @@ const tokenHandler = (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   if (method === 'GET') {
-    const { id } = getUser(req)!;
+    const user = getUser(req)!;
 
-    // Allow `.put` to path if path or subpath matches glob
-    const permissionsGlobs = [
-      // e.g. gun.get('id:id_1').put('something')
-      `${GUN_PREFIX.id}:${id}`,
-      // e.g. gun.get('id:id_1/profile').put('something')
-      `${GUN_PREFIX.id}:${id}/*`,
-      // e.g. gun.get('username:username_1').get('id:id_1').put('something')
-      `*/${GUN_PREFIX.id}:${id}`,
-      // e.g. gun.get('username:username_1').get('id:id_1').get('something').put('something')
-      `*/${GUN_PREFIX.id}:${id}/*`,
-    ];
+    const idPath = id(user.id);
+    const emailPath = email(user.email);
 
-    const permissions = `{${permissionsGlobs.join(',')}}`;
-
+    // Allow `.put` to path if path or subpath includes id or email
+    // All these will work:
+    //  gun.get('id:id_1').put('something')
+    //  gun.get('id:id_1/profile').put('something')
+    //  gun.get('username:username_1').get('id:id_1').put('something')
+    //  gun.get('username:username_1').get('id:id_1').get('something').put('something')
+    const permissions = `{**/+(${idPath}|${emailPath})/**,**/+(${idPath}|${emailPath})}`;
     const token = jwt.sign(
       {
         permissions,
