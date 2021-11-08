@@ -12,22 +12,6 @@ Create a local env configuration file using the example template:
 $ cp .env.local.example .env.local
 ```
 
-Generate [Gun](https://gun.eco/docs/API) app access keys:
-
-```bash
-$ yarn generate-app-key
-```
-
-You should see something like:
-
-```bash
-> This is your secret app key pair.
-> Add this to your .dotenv file:
-> APP_ACCESS_KEY_PAIR='{"pub":"somelongstring","priv":"somelongstring","epub":"somelongstring","epriv":"somelongstring"}'
-```
-
-Copy `APP_ACCESS_KEY_PAIR` and add it to your new `.env.local` file. Fill out the rest of the env variables according to the comments in the file (env variables might be in flux while in alpha)
-
 Install dependencies:
 
 ```bash
