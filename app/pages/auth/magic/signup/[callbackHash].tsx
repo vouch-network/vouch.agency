@@ -26,7 +26,7 @@ export default function AuthSignup({ invitedByIdentifier }: Props) {
     loginCallback,
     getUser,
   } = useAuth();
-  const { isGetReady, isPutReady, getGun } = useGun();
+  const { isGunReady, getGun } = useGun();
   const [isVouchSaved, setIsVouchSaved] = useState<boolean>();
 
   const redirectTo = '/network/setup';
@@ -81,10 +81,10 @@ export default function AuthSignup({ invitedByIdentifier }: Props) {
   }, [isAuthReady, isLoggedIn]);
 
   useEffect(() => {
-    if (isPutReady) {
+    if (isLoggedIn) {
       saveVouch();
     }
-  }, [isPutReady]);
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (isVouchSaved) {

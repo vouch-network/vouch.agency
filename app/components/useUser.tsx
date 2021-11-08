@@ -31,7 +31,7 @@ const UserContext = createContext<ContextValue>({
 
 export const UserProvider = ({ children }: Props) => {
   const { isLoggedIn, getUser } = useAuth();
-  const { isGetReady, getGun } = useGun();
+  const { isGunReady, getGun } = useGun();
   const [privProfile, setPrivProfile] = useState<PrivateProfile | null>();
   const [pubProfile, setPubProfile] = useState<PublicProfile | null>();
 
@@ -76,11 +76,11 @@ export const UserProvider = ({ children }: Props) => {
   };
 
   useEffect(() => {
-    if (isLoggedIn && isGetReady) {
+    if (isLoggedIn && isGunReady) {
       getPrivProfile();
       getPubProfile();
     }
-  }, [isLoggedIn && isGetReady]);
+  }, [isLoggedIn && isGunReady]);
 
   const saveUserSettings = async (value: Partial<PrivateProfile>) => {
     console.log('TODO');

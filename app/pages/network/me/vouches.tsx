@@ -21,7 +21,7 @@ const Loading = () => (
 
 function UserVouches() {
   const { getUser } = useAuth();
-  const { getGun, isGetReady } = useGun();
+  const { getGun, isGunReady } = useGun();
   const [receivedVouches, setReceivedVouches] = useState<Vouch[]>();
   const [givenVouches, setGivenVouches] = useState<Vouch[]>();
 
@@ -83,10 +83,10 @@ function UserVouches() {
   };
 
   useEffect(() => {
-    if (isGetReady) {
+    if (isGunReady) {
       getVouches();
     }
-  }, [isGetReady]);
+  }, [isGunReady]);
 
   return (
     <Box pad={{ horizontal: 'medium' }} width="medium" gap="large">

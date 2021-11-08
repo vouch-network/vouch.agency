@@ -83,8 +83,8 @@ function LoginForm({ isSubmitting, onSubmit }: LoginFormProps) {
 
 export default function Login() {
   const router = useRouter();
-  const { isGetReady, getGun } = useGun();
-  const { login, logout } = useAuth();
+  const { isGunReady, getGun } = useGun();
+  const { login } = useAuth();
   const channel = useSessionChannel();
 
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
@@ -100,6 +100,7 @@ export default function Login() {
 
     try {
       // Check username
+      // TODO check by encrypted email
       const gunUserByUsername = await getGun()!
         .get(`${GUN_PREFIX.app}:${GUN_PATH.profiles}`)
         .get(`${GUN_PREFIX.username}:${value.username}`)
@@ -110,36 +111,20 @@ export default function Login() {
         throw new Error();
       }
 
-      await logout();
-
       // NOTE .login will resolve once the user clicks the email link,
       // not when they finish the callback flow
-      const user = await login(
-        { email: value.email },
-        { username: value.username }
-      );
+      await login({ email: value.email }, { username: value.username });
 
-      const gunUserById = await getGun()!
-        .get(`${GUN_PREFIX.id}:${user.id}`)
-        // @ts-ignore
-        .then();
+      setIsLoggingIn(false);
 
-      if (!gunUserById) {
-        throw new Error();
-      }
-
-      // Add user to session storage, we need to wait to see if the
-      // callback page verifies this user
-      channel.addToStorage({
-        user,
-      });
+      // TODO listen for session channel update and redirect
     } catch (err) {
+      setIsLoggingIn(false);
+
       setError(
         `Couldn't log you in. Check your username and email and try again.`
       );
     }
-
-    setIsLoggingIn(false);
   };
 
   useEffect(() => {
@@ -151,7 +136,7 @@ export default function Login() {
       <Heading size="small" margin="none">
         Sign in to Network
       </Heading>
-      {isGetReady && (
+      {isGunReady && (
         <LoginForm onSubmit={handleSubmit} isSubmitting={isLoggingIn} />
       )}
 

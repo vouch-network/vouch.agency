@@ -2,7 +2,8 @@ import axios from 'axios';
 import type { NextApiRequest, NextApiResponse, NextApiHandler } from 'next';
 import { Magic } from '@magic-sdk/admin';
 
-import { AuthUser, AuthSession } from 'utils/auth';
+import type { AuthUser, AuthSession } from 'utils/auth';
+import { identity } from 'lodash';
 
 class AuthAdminService {
   private static _client: Magic;
@@ -17,12 +18,63 @@ class AuthAdminService {
   }
 }
 
-export type NextApiRequestWithSession = NextApiRequest & {
-  session: AuthSession;
-};
+export type NextApiRequestWithUser = NextApiRequest & AuthSession;
 
 export function getUser(req: NextApiRequest): AuthUser {
-  return (req as NextApiRequestWithSession).session?.user;
+  return (req as NextApiRequestWithUser).user;
+}
+
+export function getTokenFromHeader(headers: any): string | void {
+  const authHeader = headers.authorization;
+
+  if (authHeader) {
+    return AuthAdminService.client.utils.parseAuthorizationHeader(authHeader);
+  }
+}
+
+export function isTokenValid(identityToken: string) {
+  try {
+    AuthAdminService.client.token.validate(identityToken);
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getIssuerFromToken(identityToken: string): string {
+  const [, claim] = AuthAdminService.client.token.decode(identityToken);
+  const issuer = claim.iss;
+
+  return issuer;
+}
+
+export async function getUserByToken(identityToken: string): Promise<AuthUser> {
+  // FIXME this causes "API resolved without sending a response"
+  // but it seems like we're still getting the metadata
+  const metadata = await AuthAdminService.client.users.getMetadataByToken(
+    identityToken
+  );
+  // const id = getIssuerFromToken(identityToken);
+
+  return {
+    id: metadata.issuer as string,
+    email: metadata.email as string,
+  };
+}
+
+export async function validateRequestToken(
+  req: NextApiRequest
+): Promise<string> {
+  const identityToken = getTokenFromHeader(req.headers);
+
+  if (identityToken) {
+    AuthAdminService.client.token.validate(identityToken);
+
+    return identityToken;
+  }
+
+  throw new Error('Authorization header required');
 }
 
 const sendUnauthenticatedResponse = (res: NextApiResponse) => {
@@ -37,24 +89,13 @@ export function withAuthApi(handler: NextApiHandler) {
     req: NextApiRequest,
     res: NextApiResponse
   ) {
-    const authHeader = req.headers.authorization;
-
-    if (authHeader) {
-      const identityToken =
-        await AuthAdminService.client.utils.parseAuthorizationHeader(
-          authHeader
-        );
-
-      try {
-        await AuthAdminService.client.token.validate(identityToken);
-
-        handler(req, res);
-      } catch {
-        sendUnauthenticatedResponse(res);
-      }
-    } else {
-      sendUnauthenticatedResponse(res);
+    try {
+      await validateRequestToken(req);
+    } catch {
+      return sendUnauthenticatedResponse(res);
     }
+
+    handler(req, res);
   };
 }
 
@@ -64,29 +105,15 @@ export function withAuthApiUser(handler: NextApiHandler) {
     res: NextApiResponse
   ) {
     try {
-      const authHeader = req.headers.authorization!;
+      const identityToken = await validateRequestToken(req);
 
-      const identityToken =
-        AuthAdminService.client.utils.parseAuthorizationHeader(authHeader);
+      const user = await getUserByToken(identityToken);
 
-      // FIXME this causes "API resolved without sending a response"
-      // but it seems like we're still getting the metadata
-      const metadata = await AuthAdminService.client.users.getMetadataByToken(
-        identityToken
-      );
-      // const [, claim] = AuthAdminService.client.token.decode(identityToken);
-      // const issuer = claim.iss;
-
-      const user: AuthUser = {
-        id: metadata.issuer as string,
-        email: metadata.email as string,
-      };
-
-      (req as NextApiRequestWithSession).session = { user };
-
-      handler(req, res);
-    } catch {
-      sendUnauthenticatedResponse(res);
+      (req as NextApiRequestWithUser).user = user;
+    } catch (err) {
+      return sendUnauthenticatedResponse(res);
     }
+
+    handler(req, res);
   });
 }

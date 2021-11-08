@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Magic, RPCError, RPCErrorCode } from 'magic-sdk';
 import { Box, Text, Layer } from 'grommet';
 
+import useApiToken from 'components/useApiToken';
 import { encode } from 'utils/base64';
 import type { AuthUser, CallbackParams } from 'utils/auth';
 
@@ -20,18 +21,13 @@ type LoginParams = {
   email: string;
 };
 
-type AuthHeader = {
-  authorization: string; // Bearer {identity token}
-};
-
 // login flow:
 // login() -> loginCallback()
 interface ContextValue {
-  login: (arg: LoginParams, params: CallbackParams) => Promise<AuthUser>;
+  login: (arg: LoginParams, params: CallbackParams) => Promise<void>;
   logout: () => Promise<any>;
-  loginCallback: () => Promise<any>;
+  loginCallback: (arg?: CallbackParams) => Promise<AuthUser>;
   getUser: () => Promise<AuthUser | undefined>;
-  getAuthHeader: () => Promise<AuthHeader | undefined>;
   isLoggedIn: boolean;
   isReady: boolean;
 }
@@ -41,13 +37,13 @@ export const AuthContext = createContext<ContextValue>({
   logout: () => Promise.reject(new Error('Auth not ready')),
   loginCallback: () => Promise.reject(new Error('Auth not ready')),
   getUser: () => Promise.reject(new Error('Auth not ready')),
-  getAuthHeader: () => Promise.reject(new Error('Auth not ready')),
   isReady: false,
   isLoggedIn: false,
 });
 
 export const AuthProvider = ({ children }: Props) => {
   const magicRef = useRef<Magic>();
+  const { setTokenGetter } = useApiToken();
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [loginInfo, setLoginInfo] = useState<{
@@ -63,11 +59,17 @@ export const AuthProvider = ({ children }: Props) => {
       // testMode: true,
     });
 
-    magicRef.current = magic;
-
     try {
-      setIsLoggedIn(await magicRef.current.user.isLoggedIn());
+      setIsLoggedIn(await magic.user.isLoggedIn());
     } catch {}
+
+    setTokenGetter(async () => {
+      try {
+        await magic.user.getIdToken();
+      } catch {}
+    });
+
+    magicRef.current = magic;
 
     setIsReady(true);
   };
@@ -76,6 +78,8 @@ export const AuthProvider = ({ children }: Props) => {
     initClient();
   }, []);
 
+  // Initiate login
+  // Must be finished with login callback to complete authentication
   const login: ContextValue['login'] = async ({ email }, params) => {
     setLoginInfo({
       email,
@@ -97,27 +101,14 @@ export const AuthProvider = ({ children }: Props) => {
       // not when they finish the callback flow. This means we can use
       // the identity token that's returned to get the user information
       // before completing log in
-      const identityToken = await magicRef.current!.auth.loginWithMagicLink({
+      await magicRef.current!.auth.loginWithMagicLink({
         email,
         // email: 'test+success@magic.link',
         redirectURI: `${window.origin}/auth/magic/${redirectPath}/${callbackHash}`,
         showUI: false,
       });
-
-      // Parse user ID and email in token
-      const { data } = await axios.get('/api/auth/identity/metadata', {
-        headers: {
-          authorization: `Bearer ${identityToken}`,
-        },
-      });
-
-      setLoginInfo(undefined);
-
-      return data.user;
     } catch (err) {
       console.error(err);
-
-      setLoginInfo(undefined);
 
       if (err instanceof RPCError) {
         switch (err.code) {
@@ -136,27 +127,51 @@ export const AuthProvider = ({ children }: Props) => {
 
       throw new Error("Couldn't get you logged in. Try logging in again.");
     }
+
+    setLoginInfo(undefined);
+  };
+
+  // Finish logging user in
+  const loginCallback: ContextValue['loginCallback'] = async ({
+    username,
+  } = {}) => {
+    try {
+      const identityToken = await magicRef.current!.auth.loginWithCredential();
+
+      console.log({ identityToken });
+
+      const { data } = await axios.get('/api/auth/identity/metadata', {
+        headers: {
+          authorization: `Bearer ${identityToken}`,
+        },
+      });
+
+      if (data.authenticated) {
+        console.log('username:', username);
+        // TODO verify user in gun if existing user
+        // const gunUserById = await getGun()!
+        // .get(`${GUN_PREFIX.id}:${data.id}`)
+        // // @ts-ignore
+        // .then();
+
+        setIsLoggedIn(true);
+
+        return data.user;
+      } else {
+        setIsLoggedIn(false);
+      }
+    } catch (err) {
+      console.log('loginCallback err:', err);
+
+      setIsLoggedIn(false);
+    }
   };
 
   const logout: ContextValue['logout'] = async () => {
     if (magicRef.current) {
-      setIsLoggedIn(false);
-
       await magicRef.current!.user.logout();
-    }
-  };
 
-  const loginCallback: ContextValue['loginCallback'] = async () => {
-    if (magicRef.current) {
-      try {
-        await magicRef.current.auth.loginWithCredential();
-
-        setIsLoggedIn(await magicRef.current.user.isLoggedIn());
-      } catch (err) {
-        console.log('loginCallback err:', err);
-
-        setIsLoggedIn(false);
-      }
+      setIsLoggedIn(false);
     }
   };
 
@@ -173,18 +188,6 @@ export const AuthProvider = ({ children }: Props) => {
     }
   };
 
-  const getAuthHeader: ContextValue['getAuthHeader'] = async () => {
-    if (magicRef.current) {
-      try {
-        const idToken = await magicRef.current.user.getIdToken();
-
-        return {
-          authorization: `Bearer ${idToken}`,
-        };
-      } catch {}
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -192,7 +195,6 @@ export const AuthProvider = ({ children }: Props) => {
         logout,
         loginCallback,
         getUser,
-        getAuthHeader,
         isReady,
         isLoggedIn,
       }}

@@ -131,8 +131,8 @@ const STATE = {
 type State = typeof STATE[keyof typeof STATE];
 
 function Setup() {
-  const { isReady: isAuthReady, getUser, getAuthHeader } = useAuth();
-  const { isGetReady, isPutReady, getGun } = useGun();
+  const { isReady: isAuthReady, getUser } = useAuth();
+  const { isGunReady, isPutReady, getGun } = useGun();
   const [signUpState, setSignUpState] = useState<State>(STATE.empty);
 
   const isFinishedFlow = signUpState === STATE.savedProfile;
@@ -201,10 +201,10 @@ function Setup() {
   };
 
   useEffect(() => {
-    if (isGetReady) {
+    if (isGunReady) {
       init();
     }
-  }, [isGetReady]);
+  }, [isGunReady]);
 
   useEffect(() => {
     if (isFinishedFlow) {

@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Box, Button, Spinner, Form, Text, TextInput } from 'grommet';
@@ -6,11 +5,8 @@ import { Box, Button, Spinner, Form, Text, TextInput } from 'grommet';
 import NetworkLayout from 'components/NetworkLayout';
 import useAuth from 'components/useAuth';
 import useGun from 'components/useGun';
-import useSessionChannel from 'components/useSessionChannel';
-import { GUN_KEY, GUN_PREFIX } from 'utils/constants';
 import type { AuthUser, CallbackParams } from 'utils/auth';
 import { decode } from 'utils/base64';
-import { VouchType } from 'utils/vouches';
 
 type Props = {
   username: string;
@@ -18,49 +14,34 @@ type Props = {
 
 export default function AuthCallback({ username }: Props) {
   const router = useRouter();
-  const channel = useSessionChannel();
-  const { isReady: isAuthReady, loginCallback, getUser } = useAuth();
-  const { isGetReady, isPutReady, getGun } = useGun();
-  const [unverifiedUser, setUnverifiedUser] = useState<AuthUser>();
+  const { isReady: isAuthReady, loginCallback } = useAuth();
 
   // const redirectTo = '/network/we';
   const redirectTo = '/network/me';
 
-  // Get user that attempted login from session storage
-  channel.onMessage(({ value }: any) => {
-    if (value?.user) {
-      setUnverifiedUser(value.user);
-    }
-  });
-
   const finishLogin = async () => {
-    if (!unverifiedUser) return;
+    try {
+      const user = await loginCallback({ username });
 
-    const storedUsername = await getGun()
-      ?.get(`${GUN_PREFIX.id}:${unverifiedUser.id!}`)
-      .get(GUN_KEY.username)
-      // @ts-ignore
-      .then();
-
-    if (username === storedUsername) {
-      await loginCallback();
-
-      router.replace(redirectTo);
-    } else {
+      if (user) {
+        router.replace(redirectTo);
+      } else {
+        router.replace(
+          `/network/login?loginError=${'Could not complete login'}`
+        );
+      }
+    } catch (err) {
+      console.error(err);
       router.replace(`/network/login?loginError=${'Could not complete login'}`);
     }
   };
 
-  const isAbleToLogIn = isAuthReady && isGetReady && unverifiedUser;
-
-  console.log({ isAuthReady, isGetReady, unverifiedUser });
-
   useEffect(() => {
-    if (isAbleToLogIn) {
+    if (isAuthReady) {
       // complete login
       finishLogin();
     }
-  }, [isAbleToLogIn]);
+  }, [isAuthReady]);
 
   useEffect(() => {
     router.prefetch(redirectTo);
@@ -80,11 +61,11 @@ AuthCallback.getLayout = function getLayout(page: any) {
 // Check hash for some additional information, e.g. to differentiate
 // between sign ups and log ins
 export async function getServerSideProps(context: any) {
-  const { params } = context;
+  const { params, query } = context;
 
   const callbackParams = decode(params.callbackHash) as CallbackParams;
 
-  if (!callbackParams.username) {
+  if (!callbackParams.username || !query.magic_credential) {
     return {
       notFound: true,
     };

@@ -150,8 +150,8 @@ export async function getServerSideProps(context: any) {
   };
 
   const signupToken = jwt.sign(tokenData, process.env.APP_TOKEN_SECRET, {
-    // Expire 30 minutes from now (magic link expires in 20 min)
-    expiresIn: 60 * 30,
+    // TODO check if token is expired when submitting form
+    expiresIn: '2h',
   });
 
   const props: Props = {
