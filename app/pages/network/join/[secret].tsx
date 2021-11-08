@@ -125,8 +125,8 @@ SecretJoin.getLayout = function getLayout(page: any) {
 
 // Check hash in URL server-side
 export async function getServerSideProps(context: any) {
-  if (!process.env.APP_ACCESS_TOKEN_SECRET) {
-    throw new Error('APP_ACCESS_TOKEN_SECRET in env environment required');
+  if (!process.env.APP_TOKEN_SECRET) {
+    throw new Error('APP_TOKEN_SECRET in env environment required');
   }
 
   if (!process.env.ADMIN_JOIN_PATH || !process.env.ADMIN_USERNAME) {
@@ -149,7 +149,7 @@ export async function getServerSideProps(context: any) {
     invitedByIdentifier: `${GUN_PREFIX.username}:${process.env.ADMIN_USERNAME}`,
   };
 
-  const signupToken = jwt.sign(tokenData, process.env.APP_ACCESS_TOKEN_SECRET, {
+  const signupToken = jwt.sign(tokenData, process.env.APP_TOKEN_SECRET, {
     // Expire 30 minutes from now (magic link expires in 20 min)
     expiresIn: 60 * 30,
   });

@@ -102,8 +102,8 @@ AuthSignup.getLayout = function getLayout(page: any) {
 // Check hash for some additional information, e.g. to differentiate
 // between sign ups and log ins
 export async function getServerSideProps(context: any) {
-  if (!process.env.APP_ACCESS_TOKEN_SECRET) {
-    throw new Error('APP_ACCESS_TOKEN_SECRET in env environment required');
+  if (!process.env.APP_TOKEN_SECRET) {
+    throw new Error('APP_TOKEN_SECRET in env environment required');
   }
 
   const { params } = context;
@@ -117,7 +117,7 @@ export async function getServerSideProps(context: any) {
     try {
       const decoded: SignupToken = jwt.verify(
         callbackParams.signupToken,
-        process.env.APP_ACCESS_TOKEN_SECRET
+        process.env.APP_TOKEN_SECRET
       );
 
       if (!decoded.invitedByIdentifier) {

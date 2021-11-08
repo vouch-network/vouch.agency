@@ -12,7 +12,7 @@ Create .env file:
 $ cp .env.example .env
 ```
 
-Copy the `APP_ACCESS_TOKEN_SECRET` from '/app/.env.local` to the new server .env. Generate and copy to the app .env if this value doesn't exist yet.
+Copy the `APP_TOKEN_SECRET` from '/app/.env.local` to the new server .env. Generate and copy to the app .env if this value doesn't exist yet.
 
 Install and start the server:
 

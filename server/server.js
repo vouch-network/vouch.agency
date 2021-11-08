@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const globToRegExp = require('glob-to-regexp');
@@ -7,10 +8,10 @@ require('gun/sea');
 // implements forked version of bullet catcher with
 // additional error handling
 require('bullet-catcher');
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const port = process.env.PORT || 8765;
-const APP_ACCESS_TOKEN_SECRET = process.env.APP_ACCESS_TOKEN_SECRET;
+const APP_PUBLIC_KEY = process.env.APP_PUBLIC_KEY;
 
 const app = express();
 
@@ -24,10 +25,9 @@ const server = app.listen(port, () => {
 function verifyToken(msg) {
   if (msg?.headers?.accessToken) {
     try {
-      const decoded = jwt.verify(
-        msg.headers.accessToken,
-        APP_ACCESS_TOKEN_SECRET
-      );
+      const decoded = jwt.verify(msg.headers.accessToken, APP_PUBLIC_KEY, {
+        algorithm: 'RS256',
+      });
 
       // Allow `.put` to path if path, subpath or reference tests true
       const regexp = globToRegExp(decoded.permissions, { extended: true });
