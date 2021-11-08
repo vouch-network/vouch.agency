@@ -43,7 +43,7 @@ export function decrypt(hash: Hash): string {
   return decrypted.toString();
 }
 
-// One-way encryption--i.e. encrypt data that cannot be decrypted later
+// One-way hashing--cannot be decoded later
 export function hash(value: any): string {
   const hmac = crypto.createHmac('sha256', process.env.APP_ENCRYPTION_SECRET!);
 

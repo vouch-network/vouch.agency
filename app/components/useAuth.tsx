@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }: Props) => {
       const identityToken = await magicRef.current!.auth.loginWithMagicLink({
         email,
         // email: 'test+success@magic.link',
-        redirectURI: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/magic/${redirectPath}/${callbackHash}`,
+        redirectURI: `${window.origin}/auth/magic/${redirectPath}/${callbackHash}`,
         showUI: false,
       });
 

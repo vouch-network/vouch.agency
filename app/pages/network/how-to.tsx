@@ -1,4 +1,5 @@
-import axios from 'axios';
+import type { GetServerSideProps } from 'next';
+import absoluteUrl from 'next-absolute-url';
 import { Box, Button, Text, Anchor } from 'grommet';
 import styled from 'styled-components';
 
@@ -12,9 +13,7 @@ const Wrapper = styled(Box)`
   }
 `;
 
-function HowTo() {
-  const { userProfile } = useUser();
-
+function HowTo({ origin }: any) {
   return (
     <Wrapper width="large" margin={{ vertical: 'xlarge' }}>
       <Box as="header">
@@ -57,11 +56,8 @@ function HowTo() {
         <Text as="h2">Control your profile visibility</Text>
         <Text as="p">
           Hide your profile from the public directory (
-          <Anchor
-            size="small"
-            href={`${process.env.NEXT_PUBLIC_BASE_URL}/profiles}`}
-          >
-            {process.env.NEXT_PUBLIC_BASE_URL}/profiles
+          <Anchor size="small" href={`${origin}/profiles}`}>
+            {origin}/profiles
           </Anchor>
           ) by clicking{' '}
           <Button
@@ -131,10 +127,20 @@ function HowTo() {
   );
 }
 
-HowTo.getLayout = function getLayout(page) {
+HowTo.getLayout = function getLayout(page: any) {
   return <NetworkLayout>{page}</NetworkLayout>;
 };
 
 HowTo.authRequired = true;
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const { origin } = absoluteUrl(context.req);
+
+  return {
+    props: {
+      origin,
+    },
+  };
+};
 
 export default HowTo;
