@@ -4,8 +4,10 @@ import { Magic, RPCError, RPCErrorCode } from 'magic-sdk';
 import { Box, Text, Layer } from 'grommet';
 
 import useApiToken from 'components/useApiToken';
+import useGun from 'components/useGun';
 import { encode } from 'utils/base64';
-import type { AuthUser, CallbackParams } from 'utils/auth';
+import { id } from 'utils/gunDB';
+import type { AuthUser, AuthMetadata, CallbackParams } from 'utils/auth';
 
 const NEXT_PUBLIC_MAGIC_API_KEY = process.env.NEXT_PUBLIC_MAGIC_API_KEY;
 
@@ -20,13 +22,16 @@ interface Props {
 type LoginParams = {
   email: string;
 };
+export type Login = Promise<AuthMetadata | void>;
+
+type IdentityToken = string;
 
 // login flow:
 // login() -> loginCallback()
 interface ContextValue {
-  login: (arg: LoginParams, params: CallbackParams) => Promise<void>;
+  login: (arg: LoginParams, params: CallbackParams) => Login;
   logout: () => Promise<any>;
-  loginCallback: (arg?: CallbackParams) => Promise<AuthUser>;
+  loginCallback: () => Promise<AuthUser | null | void>;
   getUser: () => Promise<AuthUser | undefined>;
   isLoggedIn: boolean;
   isReady: boolean;
@@ -41,14 +46,40 @@ export const AuthContext = createContext<ContextValue>({
   isLoggedIn: false,
 });
 
+// state:
+// [empty] -> ready
+//  ready -> authenticated
+//  ready -> sentEmail
+//  ready -> sendEmailFailed
+//  sendEmailFailed -> sentEmail
+//   sentEmail -> gotMetadataFromEmailToken
+//   sentEmail -> getUserFromEmailTokenFailed
+//   getUserFromEmailTokenFailed -> gotMetadataFromEmailToken
+//    gotMetadataFromEmailToken -> authenticated
+//    authenticated -> authenticationFailed
+//     authenticated -> ready
+const STATE = {
+  empty: '[empty]',
+  ready: 'ready',
+  sendEmailFailed: 'sendEmailFailed',
+  sentEmail: 'sentEmail',
+  getUserFromEmailTokenFailed: 'getUserFromEmailTokenFailed',
+  gotMetadataFromEmailToken: 'gotMetadataFromEmailToken',
+  authenticated: 'authenticated',
+  authenticationFailed: 'authenticationFailed',
+} as const;
+type State = typeof STATE[keyof typeof STATE];
+
 export const AuthProvider = ({ children }: Props) => {
   const magicRef = useRef<Magic>();
-  const { setTokenGetter } = useApiToken();
-  const [isReady, setIsReady] = useState<boolean>(false);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const { setApiToken } = useApiToken();
+  const { getGun } = useGun();
+  const [authState, setAuthState] = useState<State>(STATE.empty);
   const [loginInfo, setLoginInfo] = useState<{
     email: string;
   }>();
+  const isReady = authState === STATE.ready;
+  const isLoggedIn = authState === STATE.authenticated;
 
   const initClient = async () => {
     const magic = new Magic(NEXT_PUBLIC_MAGIC_API_KEY, {
@@ -59,24 +90,42 @@ export const AuthProvider = ({ children }: Props) => {
       // testMode: true,
     });
 
-    try {
-      setIsLoggedIn(await magic.user.isLoggedIn());
-    } catch {}
-
-    setTokenGetter(async () => {
-      try {
-        await magic.user.getIdToken();
-      } catch {}
-    });
-
     magicRef.current = magic;
 
-    setIsReady(true);
+    setAuthState(STATE.ready);
+
+    try {
+      const isLoggedIn = await magic.user.isLoggedIn();
+
+      if (isLoggedIn) {
+        setAuthState(STATE.authenticated);
+        setApiToken(await magic.user.getIdToken());
+      }
+    } catch {}
   };
 
   useEffect(() => {
     initClient();
   }, []);
+
+  const getMetadataFromToken = async (
+    identityToken: IdentityToken | null
+  ): Promise<AuthMetadata> => {
+    if (!identityToken) {
+      return {
+        authenticated: false,
+        user: null,
+      };
+    }
+
+    const { data } = await axios.get('/api/auth/identity/metadata', {
+      headers: {
+        authorization: `Bearer ${identityToken}`,
+      },
+    });
+
+    return data;
+  };
 
   // Initiate login
   // Must be finished with login callback to complete authentication
@@ -92,22 +141,36 @@ export const AuthProvider = ({ children }: Props) => {
     }
 
     try {
-      const callbackParams: CallbackParams = params;
-      const callbackHash = encode(callbackParams);
-
-      let redirectPath = callbackParams.isNewUser ? 'signup' : 'callback';
+      const redirectPath = params.isNewUser ? 'signup' : 'callback';
 
       // NOTE .login will resolve once the user clicks the email link,
       // not when they finish the callback flow. This means we can use
       // the identity token that's returned to get the user information
       // before completing log in
-      await magicRef.current!.auth.loginWithMagicLink({
+      const identityToken = await magicRef.current!.auth.loginWithMagicLink({
         email,
         // email: 'test+success@magic.link',
-        redirectURI: `${window.origin}/auth/magic/${redirectPath}/${callbackHash}`,
+        redirectURI: `${window.origin}/auth/magic/${redirectPath}`,
         showUI: false,
       });
+
+      setAuthState(STATE.sentEmail);
+
+      try {
+        const metadata = await getMetadataFromToken(identityToken);
+
+        setAuthState(STATE.gotMetadataFromEmailToken);
+
+        // Enable making API requests with unauthenticated user
+        setApiToken(identityToken);
+
+        return metadata;
+      } catch {
+        setAuthState(STATE.getUserFromEmailTokenFailed);
+      }
     } catch (err) {
+      setAuthState(STATE.sendEmailFailed);
+
       console.error(err);
 
       if (err instanceof RPCError) {
@@ -127,51 +190,54 @@ export const AuthProvider = ({ children }: Props) => {
 
       throw new Error("Couldn't get you logged in. Try logging in again.");
     }
-
-    setLoginInfo(undefined);
   };
 
   // Finish logging user in
-  const loginCallback: ContextValue['loginCallback'] = async ({
-    username,
-  } = {}) => {
+  // TODO clean up nesting
+  const loginCallback: ContextValue['loginCallback'] = async () => {
     try {
       const identityToken = await magicRef.current!.auth.loginWithCredential();
 
-      console.log({ identityToken });
+      setApiToken(identityToken);
 
-      const { data } = await axios.get('/api/auth/identity/metadata', {
-        headers: {
-          authorization: `Bearer ${identityToken}`,
-        },
-      });
+      const data = await getMetadataFromToken(identityToken);
 
-      if (data.authenticated) {
-        console.log('username:', username);
-        // TODO verify user in gun if existing user
-        // const gunUserById = await getGun()!
-        // .get(`${GUN_PREFIX.id}:${data.id}`)
-        // // @ts-ignore
-        // .then();
+      if (data.authenticated && data.user) {
+        // Verify user in db
+        const gun = getGun();
+        const gunUser = await (gun
+          ? gun
+              .get(id(data.user.id))
+              // @ts-ignore
+              .then()
+          : null);
 
-        setIsLoggedIn(true);
-
-        return data.user;
+        if (gunUser) {
+          setAuthState(STATE.authenticated);
+        } else {
+          // TODO handle
+          setAuthState(STATE.authenticationFailed);
+        }
       } else {
-        setIsLoggedIn(false);
+        setAuthState(STATE.authenticationFailed);
       }
+
+      return data.user;
     } catch (err) {
       console.log('loginCallback err:', err);
-
-      setIsLoggedIn(false);
+      setAuthState(STATE.authenticationFailed);
     }
+
+    // setLoginInfo(undefined);
   };
 
   const logout: ContextValue['logout'] = async () => {
     if (magicRef.current) {
+      setApiToken(null);
+
       await magicRef.current!.user.logout();
 
-      setIsLoggedIn(false);
+      setAuthState(STATE.ready);
     }
   };
 
@@ -187,6 +253,12 @@ export const AuthProvider = ({ children }: Props) => {
       } catch {}
     }
   };
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('useAuth[authState]:', authState);
+    }
+  }, [authState]);
 
   return (
     <AuthContext.Provider

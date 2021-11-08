@@ -1,7 +1,14 @@
+import type { Base64Hash } from 'utils/crypto';
+
 export type AuthUser = {
   id: string;
-  email: string;
+  email: Base64Hash; // should always be encrypted
   // publicAddress?: string;
+};
+
+export type AuthMetadata = {
+  authenticated: boolean;
+  user: AuthUser | null;
 };
 
 export type AuthSession = {
@@ -9,12 +16,5 @@ export type AuthSession = {
 };
 
 export type CallbackParams = {
-  username?: string;
   isNewUser?: boolean;
-  signupToken?: string;
-};
-
-export type SignupToken = {
-  uuid: string;
-  invitedByIdentifier: string;
 };

@@ -4,8 +4,16 @@ import { useState, useEffect, useRef, createContext, useContext } from 'react';
 import useGun from 'components/useGun';
 import type { AuthUser } from 'utils/auth';
 import type { PrivateProfile, PublicProfile } from 'utils/profiles';
-import { prepareFormValues, expandDataKeys } from 'utils/gunDB';
-import { GUN_PREFIX, GUN_PATH, GUN_KEY } from 'utils/constants';
+import {
+  preparePutValue,
+  expandDataKeys,
+  path,
+  app,
+  id,
+  GUN_PATH,
+  GUN_KEY,
+} from 'utils/gunDB';
+
 import useAuth from 'components/useAuth';
 
 interface Props {
@@ -31,7 +39,7 @@ const UserContext = createContext<ContextValue>({
 
 export const UserProvider = ({ children }: Props) => {
   const { isLoggedIn, getUser } = useAuth();
-  const { isGunReady, getGun } = useGun();
+  const { isReady: isGunReady, getGun } = useGun();
   const [privProfile, setPrivProfile] = useState<PrivateProfile | null>();
   const [pubProfile, setPubProfile] = useState<PublicProfile | null>();
 
@@ -42,7 +50,7 @@ export const UserProvider = ({ children }: Props) => {
     const gun = getGun()!;
 
     const username = await gun
-      .get(`${GUN_PREFIX.id}:${user.id}`)
+      .get(id(user.id))
       .get(GUN_KEY.username)
       // @ts-ignore
       .then();
@@ -61,7 +69,7 @@ export const UserProvider = ({ children }: Props) => {
     const gun = getGun()!;
 
     const profile = await gun
-      .get(`${GUN_PREFIX.id}:${user.id}/${GUN_PATH.profile}`)
+      .get(`${id(user.id)}/${GUN_PATH.profile}`)
       // @ts-ignore
       .then();
 
@@ -92,8 +100,8 @@ export const UserProvider = ({ children }: Props) => {
 
     return new Promise((resolve, reject) => {
       gun
-        .get(`${GUN_PREFIX.id}:${user.id}/${GUN_PATH.profile}`)
-        .put(prepareFormValues(value), ({ err }) => {
+        .get(path(id(user.id), GUN_PATH.profile))
+        .put(preparePutValue(value), ({ err }) => {
           if (err) {
             reject(err);
           } else {
@@ -107,7 +115,7 @@ export const UserProvider = ({ children }: Props) => {
     const user = (await getUser())!;
     const gun = getGun()!;
 
-    const profile = gun.get(`${GUN_PREFIX.id}:${user.id}/${GUN_PATH.profile}`);
+    const profile = gun.get(path(id(user.id), GUN_PATH.profile));
     const username = await profile
       .get(GUN_KEY.username)
       // @ts-ignore
@@ -116,8 +124,8 @@ export const UserProvider = ({ children }: Props) => {
 
     return new Promise((resolve, reject) => {
       gun
-        .get(`${GUN_PREFIX.app}:${GUN_PATH.profile}`)
-        .get(`${GUN_PREFIX.username}:${username}`)
+        .get(app(GUN_PATH.profile))
+        .get(username(username))
         .put(profile, ({ err }) => {
           if (err) {
             reject(err);

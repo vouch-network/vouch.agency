@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import {
@@ -17,7 +18,7 @@ import NetworkLayout from 'components/NetworkLayout';
 import useAuth from 'components/useAuth';
 import useGun from 'components/useGun';
 import useSessionChannel from 'components/useSessionChannel';
-import { GUN_PATH, GUN_PREFIX } from 'utils/constants';
+import { GUN_PATH, app, email } from 'utils/gunDB';
 
 type LoginFormProps = {
   isSubmitting: boolean;
@@ -83,7 +84,7 @@ function LoginForm({ isSubmitting, onSubmit }: LoginFormProps) {
 
 export default function Login() {
   const router = useRouter();
-  const { isGunReady, getGun } = useGun();
+  const { isReady: isGunReady, getGun } = useGun();
   const { login } = useAuth();
   const channel = useSessionChannel();
 
@@ -99,21 +100,23 @@ export default function Login() {
     setIsLoggingIn(true);
 
     try {
-      // Check username
-      // TODO check by encrypted email
-      const gunUserByUsername = await getGun()!
-        .get(`${GUN_PREFIX.app}:${GUN_PATH.profiles}`)
-        .get(`${GUN_PREFIX.username}:${value.username}`)
+      // Check if user exists
+      const { data } = await axios.post('/api/encrypt', { email: value.email });
+
+      const gunUser = await getGun()!
+        .get(app(GUN_PATH.profiles))
+        .get(email(data.hash))
+        .get(GUN_PATH.user)
         // @ts-ignore
         .then();
 
-      if (!gunUserByUsername) {
+      if (!gunUser) {
         throw new Error();
       }
 
       // NOTE .login will resolve once the user clicks the email link,
       // not when they finish the callback flow
-      await login({ email: value.email }, { username: value.username });
+      await login({ email: value.email }, { isNewUser: false });
 
       setIsLoggingIn(false);
 

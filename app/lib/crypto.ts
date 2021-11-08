@@ -1,10 +1,10 @@
 import crypto from 'crypto';
 
-if (!process.env.APP_ENCRYPTION_SECRET) {
-  throw new Error('APP_ENCRYPTION_SECRET in env environment required');
-}
+import type { Hash } from 'utils/crypto';
 
-type Hash = { iv: string; content: string };
+if (!process.env.APP_CRYPTO_SECRET) {
+  throw new Error('APP_CRYPTO_SECRET in env environment required');
+}
 
 // Encrypt/decrypt functions based on
 // https://attacomsian.com/blog/nodejs-encrypt-decrypt-data
@@ -16,7 +16,7 @@ export function encrypt(data: string | { [key: string]: any }): Hash {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(
     algorithm,
-    process.env.APP_ENCRYPTION_SECRET!,
+    process.env.APP_CRYPTO_SECRET!,
     iv
   );
   const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
@@ -24,6 +24,7 @@ export function encrypt(data: string | { [key: string]: any }): Hash {
   return {
     iv: iv.toString('hex'),
     content: encrypted.toString('hex'),
+    name: process.env.APP_SECRET_KEY_NAME,
   };
 }
 
@@ -31,7 +32,7 @@ export function encrypt(data: string | { [key: string]: any }): Hash {
 export function decrypt(hash: Hash): string {
   const decipher = crypto.createDecipheriv(
     algorithm,
-    process.env.APP_ENCRYPTION_SECRET!,
+    process.env.APP_CRYPTO_SECRET!,
     Buffer.from(hash.iv, 'hex')
   );
 
@@ -45,7 +46,7 @@ export function decrypt(hash: Hash): string {
 
 // One-way hashing--cannot be decoded later
 export function hash(value: any): string {
-  const hmac = crypto.createHmac('sha256', process.env.APP_ENCRYPTION_SECRET!);
+  const hmac = crypto.createHmac('sha256', process.env.APP_CRYPTO_SECRET!);
 
   hmac.update(value);
 

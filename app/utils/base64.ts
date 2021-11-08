@@ -1,4 +1,10 @@
-export function encode(obj: { [key: string]: any }): string {
+import type { Hash, Base64String, Base64Hash } from 'utils/crypto';
+
+type InputObj = { [key: string]: any };
+
+export function encode<T extends Hash | InputObj>(
+  obj: T
+): T extends Hash ? Base64Hash : Base64String {
   const str = JSON.stringify(obj);
 
   if (process.browser) {
@@ -8,7 +14,7 @@ export function encode(obj: { [key: string]: any }): string {
   }
 }
 
-export function decode(str: string): { [key: string]: any } {
+export function decode(str: Base64Hash | Base64String): InputObj {
   let decoded = '';
 
   if (process.browser) {

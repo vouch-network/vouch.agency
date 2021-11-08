@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext } from 'react';
 
-import { SESSION_CHANNEL_NAME, SESSION_CHANNEL_KEY } from 'utils/constants';
+const SESSION_CHANNEL_NAME = 'va_session-channel';
+const SESSION_CHANNEL_KEY = 'va_session-shared';
 
 const EVENT_NAME = {
   REQUESTING_SHARED: 'REQUESTING_SHARED',

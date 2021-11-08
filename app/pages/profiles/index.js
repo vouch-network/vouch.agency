@@ -10,8 +10,7 @@ import PublicNav from 'components/PublicNav';
 import Square from 'components/Square';
 import VouchText from 'components/VouchText';
 import vouchLogo from 'public/images/vouch-logo.svg';
-import { GUN_PATH, GUN_KEY } from 'utils/constants';
-import { expandDataKeys } from 'utils/gunDB';
+import { GUN_PATH, GUN_KEY } from 'utils/gunDB';
 
 const logoRatio = 20 / 100;
 
@@ -21,25 +20,25 @@ export default function Profiles({ aliases }) {
 
   useEffect(() => {
     if (isReady) {
-      aliases.forEach(({ username }) => {
-        getGun()
-          .get(`~@${username}`)
-          .get({ '.': { '*': '~' } })
-          .get(`${username}/${GUN_PATH.profile}`)
-          .get(GUN_KEY.profilePhoto)
-          .get('url')
-          .once((profilePhotoUrl) => {
-            // TODO check profile[GUN_KEY.isListed]
-            if (profilePhotoUrl) {
-              setProfilesByUsername((p) => ({
-                ...p,
-                [username]: {
-                  profilePhotoUrl,
-                },
-              }));
-            }
-          });
-      });
+      // aliases.forEach(({ username }) => {
+      //   getGun()
+      //     .get(`~@${username}`)
+      //     .get({ '.': { '*': '~' } })
+      //     .get(`${username}/${GUN_PATH.profile}`)
+      //     .get(GUN_KEY.profilePhoto)
+      //     .get('url')
+      //     .once((profilePhotoUrl) => {
+      //       // TODO check profile[GUN_KEY.isListed]
+      //       if (profilePhotoUrl) {
+      //         setProfilesByUsername((p) => ({
+      //           ...p,
+      //           [username]: {
+      //             profilePhotoUrl,
+      //           },
+      //         }));
+      //       }
+      //     });
+      // });
     }
   }, [isReady]);
 

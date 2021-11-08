@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -18,21 +19,56 @@ import { Send } from 'grommet-icons';
 import NetworkLayout from 'components/NetworkLayout';
 import AboutJoiningModal from 'components/AboutJoiningModal';
 import useSignUp from 'components/useSignUp';
-import { compare, generateUUID } from 'lib/crypto';
-import type { SignupToken } from 'utils/auth';
-import { GUN_PREFIX } from 'utils/constants';
+import useGun from 'components/useGun';
+import { compare } from 'lib/crypto';
+import {
+  app,
+  path,
+  username,
+  email,
+  preparePutValue,
+  GUN_PATH,
+} from 'utils/gunDB';
 
-type SignUpFormProps = {
-  signupToken: string;
+type Props = {
+  invitedByUsername: string;
 };
 
-function SignUpForm({ signupToken }: SignUpFormProps) {
+function SignUpForm({ invitedByUsername }: Props) {
+  const { getGun } = useGun();
   const { value, onChange, sendSignupEmail, signUpError, isSubmitting } =
-    useSignUp({ signupToken });
+    useSignUp();
 
   const onSubmit = async () => {
     try {
-      await sendSignupEmail();
+      const data = await sendSignupEmail();
+
+      console.debug({ user: data?.user });
+
+      // Create invite
+      // NOTE this only works if auth is disabled on the server
+      if (data?.user) {
+        const { data } = await axios.post('/api/encrypt', {
+          email: value.email,
+        });
+
+        const gun = getGun()!;
+        const invitedBy = username(invitedByUsername);
+        const invitee = email(data.user.email);
+        const timestamp = Date.now();
+
+        const invite = gun
+          .get(app(GUN_PATH.invites))
+          .get(invitee)
+          .put(
+            preparePutValue({
+              invitedBy: username(invitedByUsername),
+              timestamp: timestamp,
+            })
+          );
+
+        gun.get(path(invitedBy, GUN_PATH.invites)).put(invite);
+      }
 
       // TODO wait for logged in broadcast and redirect
     } catch {}
@@ -76,12 +112,7 @@ function SignUpForm({ signupToken }: SignUpFormProps) {
   );
 }
 
-type Props = {
-  invitedByUsername: string;
-  signupToken: string;
-};
-
-export default function SecretJoin({ invitedByUsername, signupToken }: Props) {
+export default function SecretJoin({ invitedByUsername }: Props) {
   const router = useRouter();
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(true);
 
@@ -103,7 +134,7 @@ export default function SecretJoin({ invitedByUsername, signupToken }: Props) {
               </Text>
             </Box>
           </Box>
-          <SignUpForm signupToken={signupToken} />
+          <SignUpForm invitedByUsername={invitedByUsername} />
         </Box>
       )}
 
@@ -141,22 +172,8 @@ export async function getServerSideProps(context: any) {
     };
   }
 
-  // Generate token to verify sign up
-  const jwt = require('jsonwebtoken');
-
-  const tokenData: SignupToken = {
-    uuid: generateUUID(),
-    invitedByIdentifier: `${GUN_PREFIX.username}:${process.env.ADMIN_USERNAME}`,
-  };
-
-  const signupToken = jwt.sign(tokenData, process.env.APP_TOKEN_SECRET, {
-    // TODO check if token is expired when submitting form
-    expiresIn: '2h',
-  });
-
   const props: Props = {
     invitedByUsername: process.env.ADMIN_USERNAME,
-    signupToken,
   };
 
   return {
