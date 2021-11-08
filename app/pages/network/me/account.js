@@ -122,10 +122,12 @@ function UserAccount() {
         <Text as="h3" margin="none">
           Account information
         </Text>
-        <AccountInfoForm
-          userSettings={userSettings}
-          onSubmit={saveUserSettings}
-        />
+        {userSettings && (
+          <AccountInfoForm
+            userSettings={userSettings}
+            onSubmit={saveUserSettings}
+          />
+        )}
       </Box>
     </Box>
   );

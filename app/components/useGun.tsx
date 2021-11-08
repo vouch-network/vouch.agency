@@ -18,8 +18,7 @@ import React, {
 import type { IGunChainReference } from 'gun/types/chain';
 import Gun from 'gun/gun';
 
-import useAuth from 'components/useAuth';
-import { GUN_KEY } from 'utils/constants';
+import useApiToken from 'components/useApiToken';
 
 if (!process.env.NEXT_PUBLIC_GUN_PEERS) {
   throw new Error('NEXT_PUBLIC_GUN_PEERS in env environment required');
@@ -33,55 +32,65 @@ interface Props {
 
 interface ContextValue {
   getGun: () => IGunChainReference | undefined;
-  getAccessToken: () => string | undefined;
-  setAccessToken: (token: string) => void;
-  isGetReady: boolean;
-  isPutReady: boolean;
+  isGunReady: boolean;
 }
 
 // TODO memo
 const GunContext = createContext<ContextValue>({
   getGun: () => undefined,
-  getAccessToken: () => undefined,
-  setAccessToken: () => {},
-  isGetReady: false,
-  isPutReady: false,
+  isGunReady: false,
 });
 
 export const GunProvider = ({ children }: Props) => {
-  const { isLoggedIn, logout, getAuthHeader } = useAuth();
+  const { getTokenHeader } = useApiToken();
   const gunRef = useRef<IGunChainReference>();
   const accessTokenRef = useRef<string>();
-  const credsRequestCancelTokenRef = useRef<CancelTokenSource>();
-  const [isGetReady, setIsGetReady] = useState<boolean>(false);
-  const [isPutReady, setIsPutReady] = useState<boolean>(false);
+  const accessTokenRequestRef = useRef<any>();
+  const accessTokenRequestCancelTokenRef = useRef<CancelTokenSource>();
+  const [isGunReady, setIsGetReady] = useState<boolean>(false);
 
-  const getToken = async () => {
-    if (!gunRef.current || !isLoggedIn) {
+  const getNewAccessToken = async () => {
+    const apiTokenHeader = await getTokenHeader();
+
+    if (!apiTokenHeader) {
+      // TODO handle
       return;
     }
 
-    credsRequestCancelTokenRef.current = axios.CancelToken.source();
+    accessTokenRequestCancelTokenRef.current = axios.CancelToken.source();
 
     // get new token
     try {
-      const { data } = await axios.post(
-        `/api/network/tokens`,
-        {},
-        {
-          headers: await getAuthHeader(),
-          cancelToken: credsRequestCancelTokenRef.current.token,
-        }
-      );
+      const { data } = await axios.get(`/api/network/token`, {
+        headers: apiTokenHeader,
+        cancelToken: accessTokenRequestCancelTokenRef.current.token,
+      });
 
       // store token in app memory
       accessTokenRef.current = data.accessToken;
+
+      return accessTokenRef.current;
     } catch (err: any) {
-      // TODO standardize unauthenticated requests
+      console.error(err);
+
       if (err.response?.status === 401) {
-        logout();
+        // TODO handle global error
       }
     }
+  };
+
+  const getAccessToken = async () => {
+    if (accessTokenRef.current) {
+      return accessTokenRef.current;
+    }
+
+    if (accessTokenRequestRef.current) {
+      return await accessTokenRequestRef.current;
+    }
+
+    accessTokenRequestRef.current = getNewAccessToken();
+
+    return await accessTokenRequestRef.current;
   };
 
   useEffect(() => {
@@ -100,20 +109,32 @@ export const GunProvider = ({ children }: Props) => {
         Gun.on('opt', (ctx) => {
           if (ctx.once) return;
 
-          ctx.on('out', function (msg: any) {
+          ctx.on('out', async function (msg: any) {
             // @ts-ignore
             const to = this.to;
             // Adds headers for put
-            msg.headers = {
-              accessToken: accessTokenRef.current,
-            };
+            if (msg.put) {
+              msg.headers = {
+                accessToken: await getAccessToken(),
+              };
+            }
+
             to.next(msg); // pass to next middleware
 
-            if (msg.err === 'Invalid access token') {
-              // TODO handle invalid access token
-              getToken();
+            const err = msg.err;
 
-              console.error(msg.err);
+            if (err) {
+              console.error(err);
+
+              if (err === 'Access token expired') {
+                // Retry
+                msg.headers = {
+                  accessToken: await getNewAccessToken(),
+                };
+                to.next(msg);
+              } else {
+                // TODO handle
+              }
             }
           });
         });
@@ -131,36 +152,19 @@ export const GunProvider = ({ children }: Props) => {
     };
 
     initGun();
-  }, []);
-
-  useEffect(() => {
-    const initToken = async () => {
-      await getToken();
-
-      setIsPutReady(true);
-    };
-
-    if (isGetReady && isLoggedIn) {
-      initToken();
-    }
 
     return () => {
-      if (credsRequestCancelTokenRef.current?.cancel) {
-        credsRequestCancelTokenRef.current.cancel();
+      if (accessTokenRequestCancelTokenRef.current?.cancel) {
+        accessTokenRequestCancelTokenRef.current.cancel();
       }
     };
-  }, [isGetReady, isLoggedIn]);
+  }, []);
 
   return (
     <GunContext.Provider
       value={{
         getGun: () => gunRef.current,
-        getAccessToken: () => accessTokenRef.current,
-        setAccessToken: (v) => {
-          accessTokenRef.current = v;
-        },
-        isGetReady,
-        isPutReady,
+        isGunReady,
       }}
     >
       {children}

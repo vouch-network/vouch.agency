@@ -11,7 +11,7 @@ require('bullet-catcher');
 require('dotenv').config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const port = process.env.PORT || 8765;
-const APP_PUBLIC_KEY = process.env.APP_PUBLIC_KEY;
+const APP_PUBLIC_KEY = process.env.APP_PUBLIC_KEY.trim();
 
 const app = express();
 
@@ -66,15 +66,11 @@ function verifyToken(msg) {
 
       return isAllowed;
     } catch (err) {
-      console.log(err);
-      const error = new Error('Invalid access token');
-
       if (err.name === 'TokenExpiredError') {
-        // TODO handle expired token
-        error.expiredAt = err.expiredAt;
+        return new Error('Access token expired');
       }
 
-      return error;
+      return new Error('Invalid access token');
     }
   }
 

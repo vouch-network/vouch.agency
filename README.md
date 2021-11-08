@@ -21,13 +21,13 @@ local dev:
 add private key to app env vars:
 
 ```bash
-$ echo -e "APP_PRIVATE_KEY=\"$(cat .keys/local-private.pem)\"" >> app/.env.local
+$ awk '{printf "%s\\n", $0}' .keys/local-private.pem | awk '{print "APP_PRIVATE_KEY=\""$0"\""}' >> app/.env.local
 ```
 
 add public key to server:
 
 ```bash
-$ echo -e "APP_PUBLIC_KEY=\"$(cat .keys/local-public.pem)\"" >> server/.env
+$ awk '{printf "%s\\n", $0}' .keys/local-public.pem | awk '{print "APP_PUBLIC_KEY=\""$0"\""}' >> server/.env.local
 ```
 
 prod:

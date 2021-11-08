@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
-import { withAuthApiUser, NextApiRequestWithSession } from 'lib/auth';
+import { getTokenFromHeader, isTokenValid, getUserByToken } from 'lib/auth';
+import type { AuthUser } from 'utils/auth';
 
 // Get user metadata from an identity token
 // Useful in the case when when we want to check token metadata
@@ -12,13 +13,26 @@ const identityMetadataHandler = async (
   const { method, headers } = req;
 
   if (method === 'GET') {
-    const user = (req as NextApiRequestWithSession).session?.user || {};
+    const data: {
+      authenticated: boolean;
+      user: AuthUser | null;
+    } = {
+      authenticated: false,
+      user: null,
+    };
 
-    res.status(201).send({ user });
+    const identityToken = getTokenFromHeader(req.headers);
+
+    if (identityToken) {
+      data.authenticated = isTokenValid(identityToken);
+      data.user = await getUserByToken(identityToken);
+    }
+
+    res.status(201).send(data);
   } else {
     res.setHeader('Allow', ['GET']);
     res.status(405).end(`Method ${method} Not Allowed`);
   }
 };
 
-export default withAuthApiUser(identityMetadataHandler);
+export default identityMetadataHandler;

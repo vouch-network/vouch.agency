@@ -1,18 +1,20 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 
-import { withAuthApiUser, withAuthApi, getUser } from 'lib/auth';
+import { withAuthApiUser, getUser } from 'lib/auth';
 import { GUN_PREFIX, GUN_PATH, GUN_KEY } from 'utils/constants';
 
-if (!process.env.APP_PRIVATE_KEY) {
+const APP_PRIVATE_KEY = process.env.APP_PRIVATE_KEY?.trim();
+
+if (!APP_PRIVATE_KEY) {
   throw new Error('APP_PRIVATE_KEY in env environment required');
 }
 
-// Create token to allow `.put` access to gunDB
-const tokensHandler = (req: NextApiRequest, res: NextApiResponse) => {
+// Get access token to allow `.put` access to gunDB
+const tokenHandler = (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
-  if (method === 'POST') {
+  if (method === 'GET') {
     const { id } = getUser(req)!;
 
     // Allow `.put` to path if path or subpath matches glob
@@ -33,20 +35,20 @@ const tokensHandler = (req: NextApiRequest, res: NextApiResponse) => {
       {
         permissions,
       },
-      process.env.APP_PRIVATE_KEY!,
+      APP_PRIVATE_KEY!,
       {
         algorithm: 'RS256',
         expiresIn: '2h',
       }
     );
 
-    res.status(201).json({
+    res.status(200).json({
       accessToken: token,
     });
   } else {
-    res.setHeader('Allow', ['POST']);
+    res.setHeader('Allow', ['GET']);
     res.status(405).end(`Method ${method} Not Allowed`);
   }
 };
 
-export default withAuthApiUser(tokensHandler);
+export default withAuthApiUser(tokenHandler);

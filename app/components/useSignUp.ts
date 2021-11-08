@@ -2,6 +2,7 @@ import axios, { CancelTokenSource } from 'axios';
 import { useEffect, useState, useRef } from 'react';
 
 import useAuth from 'components/useAuth';
+import useApiToken from 'components/useApiToken';
 
 type FormValue = {
   username: string;
@@ -27,7 +28,8 @@ export default function useSignUp({
   invitedById?: string;
   signupToken?: string;
 } = {}): UseSignUp {
-  const { login, getAuthHeader } = useAuth();
+  const { getTokenHeader } = useApiToken();
+  const { login } = useAuth();
   const verifiedUsernameRef = useRef<FormValue['username'] | null>();
   const checkUsernameCancelTokenRef = useRef<CancelTokenSource>();
   const [value, setValue] = useState<FormValue>({
@@ -120,7 +122,7 @@ export default function useSignUp({
             username: verifiedUsernameRef.current,
           },
           {
-            headers: await getAuthHeader(),
+            headers: await getTokenHeader(),
           }
         );
       } else {

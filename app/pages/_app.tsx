@@ -5,6 +5,7 @@ import { Grommet } from 'grommet';
 import { GunProvider } from 'components/useGun';
 import { UserProvider } from 'components/useUser';
 import { AuthProvider } from 'components/useAuth';
+import { ApiTokenProvider } from 'components/useApiToken';
 import { SessionChannelProvider } from 'components/useSessionChannel';
 import AuthGate from 'components/AuthGate';
 import theme, { colors } from 'utils/theme';
@@ -52,17 +53,21 @@ function MyApp({ Component, pageProps }: AppProps) {
       <GlobalStyle />
       <Grommet full theme={theme}>
         <SessionChannelProvider>
-          <AuthProvider>
+          <ApiTokenProvider>
             <GunProvider>
-              <UserProvider>
-                {authRequired ? (
-                  <AuthGate>{getLayout(<Component {...pageProps} />)}</AuthGate>
-                ) : (
-                  getLayout(<Component {...pageProps} />)
-                )}
-              </UserProvider>
+              <AuthProvider>
+                <UserProvider>
+                  {authRequired ? (
+                    <AuthGate>
+                      {getLayout(<Component {...pageProps} />)}
+                    </AuthGate>
+                  ) : (
+                    getLayout(<Component {...pageProps} />)
+                  )}
+                </UserProvider>
+              </AuthProvider>
             </GunProvider>
-          </AuthProvider>
+          </ApiTokenProvider>
         </SessionChannelProvider>
       </Grommet>
     </>
