@@ -31,7 +31,7 @@ export class StorageService {
 
   static init(): Web3Storage {
     if (!process.env.WEB3_STORAGE_API_TOKEN) {
-      throw new Error('WEB3_STORAGE_API_TOKEN in env environment required');
+      throw new Error('WEB3_STORAGE_API_TOKEN in env variables required');
     }
 
     const client = new Web3Storage({

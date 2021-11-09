@@ -21,7 +21,7 @@ import Gun from 'gun/gun';
 import useApiToken from 'components/useApiToken';
 
 if (!process.env.NEXT_PUBLIC_GUN_PEERS) {
-  throw new Error('NEXT_PUBLIC_GUN_PEERS in env environment required');
+  throw new Error('NEXT_PUBLIC_GUN_PEERS in env variables required');
 }
 
 const NEXT_PUBLIC_GUN_PEERS = process.env.NEXT_PUBLIC_GUN_PEERS.split(',');
