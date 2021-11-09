@@ -12,7 +12,7 @@ import type { AuthUser, AuthMetadata, CallbackParams } from 'utils/auth';
 const NEXT_PUBLIC_MAGIC_API_KEY = process.env.NEXT_PUBLIC_MAGIC_API_KEY;
 
 if (!NEXT_PUBLIC_MAGIC_API_KEY) {
-  throw new Error('NEXT_PUBLIC_MAGIC_API_KEY in env environment required');
+  throw new Error('NEXT_PUBLIC_MAGIC_API_KEY in env variables required');
 }
 
 interface Props {

@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import type { Hash } from 'utils/crypto';
 
 if (!process.env.APP_CRYPTO_SECRET) {
-  throw new Error('APP_CRYPTO_SECRET in env environment required');
+  throw new Error('APP_CRYPTO_SECRET in env variables required');
 }
 
 // Encrypt/decrypt functions based on
@@ -44,8 +44,8 @@ export function decrypt(hash: Hash): string {
   return decrypted.toString();
 }
 
-// One-way hashing--cannot be decoded later
-export function hash(value: any): string {
+// Secure --cannot be decoded later
+export function secureHash(value: any): string {
   const hmac = crypto.createHmac('sha256', process.env.APP_CRYPTO_SECRET!);
 
   hmac.update(value);

@@ -156,10 +156,6 @@ SecretJoin.getLayout = function getLayout(page: any) {
 
 // Check hash in URL server-side
 export async function getServerSideProps(context: any) {
-  if (!process.env.APP_TOKEN_SECRET) {
-    throw new Error('APP_TOKEN_SECRET in env environment required');
-  }
-
   if (!process.env.ADMIN_JOIN_PATH || !process.env.ADMIN_USERNAME) {
     return {
       notFound: true,

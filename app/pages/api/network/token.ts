@@ -7,7 +7,7 @@ import { id, email } from 'utils/gunDB';
 const APP_PRIVATE_KEY = process.env.APP_PRIVATE_KEY?.trim();
 
 if (!APP_PRIVATE_KEY) {
-  throw new Error('APP_PRIVATE_KEY in env environment required');
+  throw new Error('APP_PRIVATE_KEY in env variables required');
 }
 
 // Get access token to allow `.put` access to gunDB
