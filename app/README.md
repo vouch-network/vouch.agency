@@ -1,6 +1,6 @@
 # VOUCH AGENCY client
 
-[vouch.agency](https://alpha.vouch.agency)
+[vouch.agency](https://beta.vouch.agency)
 
 ## Getting Started
 

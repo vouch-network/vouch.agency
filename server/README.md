@@ -1,6 +1,6 @@
 # VOUCH AGENCY Gun Relay Server
 
-[Gun](https://gun.eco/docs/API) relay server for [vouch.agency](https://alpha.vouch.agency) browser peers.
+[Gun](https://gun.eco/docs/API) relay server for [vouch.agency](https://beta.vouch.agency) browser peers.
 
 This server is not necessary in order to run the Next.js app, but will enhance persistence and distribution between client peers.
 
