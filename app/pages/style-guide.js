@@ -1,6 +1,5 @@
 import * as G from 'grommet';
 import Image from 'next/image';
-import { withPageAuthRequired } from '@auth0/nextjs-auth0';
 
 import PublicLayout from 'components/PublicLayout';
 import vLogoFillOlive from 'public/images/v-logo-fill-olive.svg';
@@ -399,5 +398,3 @@ export default function StyleGuide() {
 StyleGuide.getLayout = function getLayout(page) {
   return <PublicLayout>{page}</PublicLayout>;
 };
-
-export const getServerSideProps = withPageAuthRequired();
