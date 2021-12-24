@@ -1,5 +1,4 @@
 import type { NextComponentType, NextPageContext } from 'next';
-// import { UserProvider } from '@auth0/nextjs-auth0';
 import { createGlobalStyle } from 'styled-components';
 import { Grommet } from 'grommet';
 
