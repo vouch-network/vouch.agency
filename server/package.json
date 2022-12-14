@@ -10,7 +10,7 @@
   "dependencies": {
     "bullet-catcher": "https://github.com/SuaYoo/bullet-catcher.git",
     "dotenv": "^10.0.0",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "gun": "0.2020.1235",
     "jsonwebtoken": "^8.5.1"
   },
